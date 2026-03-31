@@ -1,0 +1,80 @@
+# Roadmap: SecureClaw
+
+## Overview
+
+SecureClaw v1 delivers a complete macOS-first desktop experience for low-technical enterprise users to install, run, stop, and diagnose OpenClaw and NemoClaw, while keeping execution, path, and binary behavior centralized so Windows support can be added with minimal rework.
+
+## Phases
+
+**Phase Numbering:**
+- Integer phases (1, 2, 3): Planned milestone work
+- Decimal phases (2.1, 2.2): Urgent insertions (marked with INSERTED)
+
+Decimal phases appear between their surrounding integers in numeric order.
+
+- [ ] **Phase 1: Platform Core and Safety Boundaries** - Centralize process/path/binary and IPC safety foundations for macOS-first, Windows-ready behavior.
+- [ ] **Phase 2: Guided Setup and Install Flows** - Deliver no-terminal onboarding with prerequisite checks and resilient install lifecycle.
+- [ ] **Phase 3: Managed Session and Plugin Runtime** - Deliver day-to-day start/stop/plugin operations with persistent runtime history.
+- [ ] **Phase 4: Diagnostics, Security Storage, and macOS Distribution Baseline** - Deliver support clarity, health visibility, secure local secret handling, and signed macOS packaging.
+
+## Phase Details
+
+### Phase 1: Platform Core and Safety Boundaries
+**Goal**: SecureClaw uses one centralized platform layer for process execution, stopping, path resolution, and binary resolution, with privileged operations only accessible through typed IPC.
+**Depends on**: Nothing (first phase)
+**Requirements**: PLAT-01, PLAT-02, PLAT-03, PLAT-04, SEC-02
+**Success Criteria** (what must be TRUE):
+  1. Process-based operations are executed and stopped through a single managed runtime path with timeout and cancellation behavior.
+  2. App data paths and CLI binary locations resolve correctly from Electron app APIs without hardcoded OS paths.
+  3. Platform-specific binary naming (including Windows-style suffix handling) resolves through one shared resolver interface.
+  4. Privileged filesystem/process operations are only invoked through typed IPC contracts and not directly from renderer code.
+**Plans**: TBD
+
+### Phase 2: Guided Setup and Install Flows
+**Goal**: A low-technical user can complete first-run setup and installation from the app UI without terminal usage, with safe recovery when installation issues occur.
+**Depends on**: Phase 1
+**Requirements**: SETUP-01, SETUP-02, SETUP-03, SETUP-04, SETUP-05
+**Success Criteria** (what must be TRUE):
+  1. User can complete a guided first-run setup wizard end-to-end without entering terminal commands.
+  2. Prerequisite checks run before install and clearly block install when environment requirements are missing.
+  3. User can run one-click OpenClaw and NemoClaw installation from the app and see live step-by-step progress.
+  4. User can retry, cancel, or rollback failed/incomplete installs and return to a safe, known state.
+**Plans**: TBD
+**UI hint**: yes
+
+### Phase 3: Managed Session and Plugin Runtime
+**Goal**: User can run day-to-day managed operations from the app, including session start/stop and plugin execution, with persistent runtime records.
+**Depends on**: Phase 2
+**Requirements**: RUN-01, RUN-02, RUN-03, RUN-04
+**Success Criteria** (what must be TRUE):
+  1. User can start a managed session from the app and see when the session becomes active.
+  2. User can stop an active session from the app and see confirmed shutdown state.
+  3. User can trigger plugin execution from the app and monitor progress and completion status.
+  4. Runtime operation history persists locally and remains available for troubleshooting after app restart.
+**Plans**: TBD
+**UI hint**: yes
+
+### Phase 4: Diagnostics, Security Storage, and macOS Distribution Baseline
+**Goal**: User and IT support can quickly understand failures, verify health, and safely distribute SecureClaw in enterprise macOS environments.
+**Depends on**: Phase 3
+**Requirements**: DIAG-01, DIAG-02, DIAG-03, SEC-01, SEC-03
+**Success Criteria** (what must be TRUE):
+  1. Errors are presented in plain language with clear next actions users can follow.
+  2. User can view a health dashboard that shows install/runtime state and key component versions.
+  3. User can export a redacted diagnostics bundle suitable for IT or support handoff.
+  4. Sensitive local credentials are stored through OS-backed secure storage abstractions rather than plain local files.
+  5. macOS build is packaged and signed to meet enterprise-safe distribution baseline checks.
+**Plans**: TBD
+**UI hint**: yes
+
+## Progress
+
+**Execution Order:**
+Phases execute in numeric order: 1 -> 1.1 -> 2 -> 2.1 -> 3 -> 3.1 -> 4
+
+| Phase | Plans Complete | Status | Completed |
+|-------|----------------|--------|-----------|
+| 1. Platform Core and Safety Boundaries | 0/TBD | Not started | - |
+| 2. Guided Setup and Install Flows | 0/TBD | Not started | - |
+| 3. Managed Session and Plugin Runtime | 0/TBD | Not started | - |
+| 4. Diagnostics, Security Storage, and macOS Distribution Baseline | 0/TBD | Not started | - |
