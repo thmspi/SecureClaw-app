@@ -1,5 +1,23 @@
 import { PLATFORM_CHANNELS } from '../../../shared/ipc/platform-channels';
 
+// Mock the runtime service to avoid electron dependencies
+jest.mock('../../runtime/runtime-service', () => ({
+  runProcess: jest.fn().mockResolvedValue({
+    correlationId: 'test-123',
+    started: true,
+    pid: 12345,
+  }),
+  stopProcess: jest.fn().mockResolvedValue({
+    correlationId: 'test-123',
+    stopped: true,
+  }),
+  getPaths: jest.fn().mockImplementation((req: { paths: string[] }) => 
+    Promise.resolve({
+      paths: Object.fromEntries(req.paths.map((p: string) => [p, `/mock/${p}`])),
+    })
+  ),
+}));
+
 // Mock ipcMain for testing
 const mockIpcMain = {
   handle: jest.fn(),

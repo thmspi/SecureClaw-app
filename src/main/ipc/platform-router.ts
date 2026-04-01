@@ -13,6 +13,7 @@ import {
   GetPathsRequest,
   GetPathsResponse,
 } from '../../shared/platform/contracts';
+import * as runtimeService from '../runtime/runtime-service';
 
 export function registerPlatformHandlers(ipc: typeof ipcMain): void {
   // Register runProcess handler with schema validation
@@ -22,13 +23,8 @@ export function registerPlatformHandlers(ipc: typeof ipcMain): void {
       // Validate request with zod schema
       const validatedRequest = runProcessSchema.parse(request) as RunProcessRequest;
       
-      // TODO: Implement actual process running logic
-      // For now, return a stub response
-      return {
-        correlationId: validatedRequest.correlationId,
-        started: true,
-        pid: 12345,
-      };
+      // Dispatch to runtime service
+      return runtimeService.runProcess(validatedRequest);
     }
   );
 
@@ -39,11 +35,8 @@ export function registerPlatformHandlers(ipc: typeof ipcMain): void {
       // Validate request with zod schema
       const validatedRequest = stopProcessSchema.parse(request) as StopProcessRequest;
       
-      // TODO: Implement actual process stopping logic
-      return {
-        correlationId: validatedRequest.correlationId,
-        stopped: true,
-      };
+      // Dispatch to runtime service
+      return runtimeService.stopProcess(validatedRequest);
     }
   );
 
@@ -54,15 +47,8 @@ export function registerPlatformHandlers(ipc: typeof ipcMain): void {
       // Validate request with zod schema
       const validatedRequest = getPathsSchema.parse(request) as GetPathsRequest;
       
-      // TODO: Implement actual path resolution logic
-      const paths: Record<string, string> = {};
-      for (const pathType of validatedRequest.paths) {
-        paths[pathType] = `/mock/path/${pathType}`;
-      }
-      
-      return {
-        paths,
-      };
+      // Dispatch to runtime service
+      return runtimeService.getPaths(validatedRequest);
     }
   );
 }
