@@ -30,7 +30,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   4. Privileged filesystem/process operations are only invoked through typed IPC contracts and not directly from renderer code.
 **Plans**: 3 plans
 Plans:
-- [ ] 01-01-PLAN.md - Define shared platform contracts and typed IPC safety boundary.
+- [x] 01-01-PLAN.md - Define shared platform contracts and typed IPC safety boundary.
 - [ ] 01-02-PLAN.md - Implement Electron API based path service and shared binary resolver.
 - [ ] 01-03-PLAN.md - Deliver centralized process runner lifecycle and IPC runtime wiring.
 
