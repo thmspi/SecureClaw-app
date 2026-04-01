@@ -1,16 +1,16 @@
 // Mock electron app
-const mockApp = {
+const mockAppBinary = {
   getPath: jest.fn(),
 };
 
 jest.mock('electron', () => ({
-  app: mockApp,
+  app: mockAppBinary,
 }));
 
 describe('Binary Resolver', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    mockApp.getPath.mockImplementation((name: string) => {
+    mockAppBinary.getPath.mockImplementation((name: string) => {
       const paths: Record<string, string> = {
         userData: '/mock/user/data',
         logs: '/mock/logs',
