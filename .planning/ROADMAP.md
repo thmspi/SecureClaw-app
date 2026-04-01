@@ -43,7 +43,11 @@ Plans:
   2. Prerequisite checks run before install and clearly block install when environment requirements are missing.
   3. User can run one-click OpenClaw and NemoClaw installation from the app and see live step-by-step progress.
   4. User can retry, cancel, or rollback failed/incomplete installs and return to a safe, known state.
-**Plans**: TBD
+**Plans**: 3 plans
+Plans:
+- [ ] 02-01-PLAN.md — Install contracts, prerequisite service, and SQLite state persistence
+- [ ] 02-02-PLAN.md — Wizard UI shell with zustand store and animated step components
+- [ ] 02-03-PLAN.md — Install orchestrator, IPC integration, and rollback service
 **UI hint**: yes
 
 ### Phase 3: Managed Session and Plugin Runtime
