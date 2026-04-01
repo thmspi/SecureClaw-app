@@ -1,0 +1,2 @@
+// Platform utilities placeholder
+export {};

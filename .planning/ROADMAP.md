@@ -28,7 +28,11 @@ Decimal phases appear between their surrounding integers in numeric order.
   2. App data paths and CLI binary locations resolve correctly from Electron app APIs without hardcoded OS paths.
   3. Platform-specific binary naming (including Windows-style suffix handling) resolves through one shared resolver interface.
   4. Privileged filesystem/process operations are only invoked through typed IPC contracts and not directly from renderer code.
-**Plans**: TBD
+**Plans**: 3 plans
+Plans:
+- [x] 01-01-PLAN.md - Define shared platform contracts and typed IPC safety boundary.
+- [ ] 01-02-PLAN.md - Implement Electron API based path service and shared binary resolver.
+- [ ] 01-03-PLAN.md - Deliver centralized process runner lifecycle and IPC runtime wiring.
 
 ### Phase 2: Guided Setup and Install Flows
 **Goal**: A low-technical user can complete first-run setup and installation from the app UI without terminal usage, with safe recovery when installation issues occur.
@@ -74,7 +78,7 @@ Phases execute in numeric order: 1 -> 1.1 -> 2 -> 2.1 -> 3 -> 3.1 -> 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Platform Core and Safety Boundaries | 0/TBD | Not started | - |
+| 1. Platform Core and Safety Boundaries | 0/3 | Not started | - |
 | 2. Guided Setup and Install Flows | 0/TBD | Not started | - |
 | 3. Managed Session and Plugin Runtime | 0/TBD | Not started | - |
 | 4. Diagnostics, Security Storage, and macOS Distribution Baseline | 0/TBD | Not started | - |
