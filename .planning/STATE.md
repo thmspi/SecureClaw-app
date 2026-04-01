@@ -75,5 +75,6 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-04-01T19:15:00.000Z
-Stopped at: Phase 1 complete
+Stopped at: Phase 1 complete - user pausing
 Resume file: .planning/phases/01-platform-core-and-safety-boundaries/01-03-SUMMARY.md
+Resume hint: Run /gsd-execute-phase 2 to continue with installer download phase
