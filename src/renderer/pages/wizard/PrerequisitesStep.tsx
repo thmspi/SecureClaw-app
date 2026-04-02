@@ -1,7 +1,9 @@
+import { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { PrerequisiteChecklist } from '@/components/wizard/PrerequisiteChecklist';
 import { useWizardStore } from '@/stores/wizard-store';
+import { usePrerequisites } from '@/hooks/use-prerequisites';
 import { ArrowRight, RefreshCw } from 'lucide-react';
 
 export function PrerequisitesStep() {
@@ -9,12 +11,19 @@ export function PrerequisitesStep() {
   const prerequisitesLoading = useWizardStore((s) => s.prerequisitesLoading);
   const allPrerequisitesPassed = useWizardStore((s) => s.allPrerequisitesPassed);
   const setStep = useWizardStore((s) => s.setStep);
+  const { runChecks } = usePrerequisites();
 
   const checks = Object.values(prerequisites);
 
+  // Run prerequisite checks on mount
+  useEffect(() => {
+    if (checks.length === 0) {
+      runChecks();
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   const handleRecheck = () => {
-    // TODO: Trigger IPC call to re-run prerequisite checks
-    console.log('Re-checking prerequisites...');
+    runChecks();
   };
 
   return (

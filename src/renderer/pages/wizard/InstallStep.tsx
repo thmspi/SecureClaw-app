@@ -11,35 +11,31 @@ import {
 import { InstallProgress } from '@/components/wizard/InstallProgress';
 import { ErrorPanel } from '@/components/wizard/ErrorPanel';
 import { useWizardStore } from '@/stores/wizard-store';
+import { useInstallProgress } from '@/hooks/use-install-progress';
 import { useState } from 'react';
 
 export function InstallStep() {
   const selectedTarget = useWizardStore((s) => s.selectedTarget);
   const install = useWizardStore((s) => s.install);
   const setStep = useWizardStore((s) => s.setStep);
-  const updateInstallProgress = useWizardStore((s) => s.updateInstallProgress);
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+  const { start, cancel, retry } = useInstallProgress();
 
   const targetName = selectedTarget === 'openclaw' ? 'OpenClaw' : 'NemoClaw';
 
-  const handleStartInstall = () => {
-    // TODO: Trigger IPC call to start installation
-    updateInstallProgress({
-      status: 'running',
-      currentStep: 1,
-      stepName: 'Downloading',
-    });
+  const handleStartInstall = async () => {
+    if (selectedTarget) {
+      await start(selectedTarget);
+    }
   };
 
-  const handleCancel = () => {
-    // TODO: Trigger IPC call to cancel and rollback
-    updateInstallProgress({ status: 'idle' });
+  const handleCancel = async () => {
+    await cancel();
     setCancelDialogOpen(false);
   };
 
-  const handleRetry = () => {
-    // TODO: Trigger IPC call to retry from failed step
-    updateInstallProgress({ status: 'running', error: undefined });
+  const handleRetry = async () => {
+    await retry();
   };
 
   // Auto-advance to complete step when install finishes
