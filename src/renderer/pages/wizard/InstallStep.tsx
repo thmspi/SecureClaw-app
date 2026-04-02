@@ -15,18 +15,14 @@ import { useInstallProgress } from '@/hooks/use-install-progress';
 import { useState } from 'react';
 
 export function InstallStep() {
-  const selectedTarget = useWizardStore((s) => s.selectedTarget);
   const install = useWizardStore((s) => s.install);
   const setStep = useWizardStore((s) => s.setStep);
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const { start, cancel, retry } = useInstallProgress();
 
-  const targetName = selectedTarget === 'openclaw' ? 'OpenClaw' : 'NemoClaw';
-
   const handleStartInstall = async () => {
-    if (selectedTarget) {
-      await start(selectedTarget);
-    }
+    // Install both OpenClaw and NemoClaw together
+    await start('openclaw'); // Orchestrator handles both
   };
 
   const handleCancel = async () => {
@@ -47,7 +43,7 @@ export function InstallStep() {
     <div className="p-6 space-y-6">
       <div className="space-y-2">
         <h2 className="text-2xl font-semibold tracking-tight">
-          Installing {targetName}
+          Installing OpenClaw & NemoClaw
         </h2>
         <p className="text-muted-foreground">
           {install.status === 'idle'
@@ -59,7 +55,7 @@ export function InstallStep() {
       {install.status === 'idle' && (
         <div className="flex justify-center py-8">
           <Button size="lg" onClick={handleStartInstall} className="min-h-11">
-            Install {targetName}
+            Install Now
           </Button>
         </div>
       )}
