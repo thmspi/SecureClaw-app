@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { PrerequisiteChecklist } from '@/components/wizard/PrerequisiteChecklist';
@@ -11,7 +11,10 @@ export function PrerequisitesStep() {
   const prerequisitesLoading = useWizardStore((s) => s.prerequisitesLoading);
   const allPrerequisitesPassed = useWizardStore((s) => s.allPrerequisitesPassed);
   const setStep = useWizardStore((s) => s.setStep);
-  const { runChecks } = usePrerequisites();
+  const { runChecks, startDockerDaemon } = usePrerequisites();
+  const [startingDocker, setStartingDocker] = useState(false);
+  const [dockerActionError, setDockerActionError] = useState<string | null>(null);
+  const [dockerActionInfo, setDockerActionInfo] = useState<string | null>(null);
 
   const checks = Object.values(prerequisites);
 
@@ -24,6 +27,22 @@ export function PrerequisitesStep() {
 
   const handleRecheck = () => {
     runChecks();
+  };
+
+  const handleStartDockerDaemon = async () => {
+    setDockerActionError(null);
+    setDockerActionInfo(null);
+    setStartingDocker(true);
+    try {
+      const result = await startDockerDaemon();
+      setDockerActionInfo(result.message);
+      await runChecks();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      setDockerActionError(message);
+    } finally {
+      setStartingDocker(false);
+    }
   };
 
   return (
@@ -50,7 +69,18 @@ export function PrerequisitesStep() {
           ))}
         </div>
       ) : (
-        <PrerequisiteChecklist checks={checks} />
+        <PrerequisiteChecklist
+          checks={checks}
+          onStartDockerDaemon={handleStartDockerDaemon}
+          dockerStartPending={startingDocker}
+        />
+      )}
+
+      {dockerActionError && (
+        <p className="text-xs text-destructive">{dockerActionError}</p>
+      )}
+      {dockerActionInfo && !dockerActionError && (
+        <p className="text-xs text-muted-foreground">{dockerActionInfo}</p>
       )}
 
       <div className="flex items-center justify-between pt-4">

@@ -23,8 +23,8 @@ export function WelcomeStep() {
       <div className="bg-muted/50 rounded-lg p-4 max-w-md mx-auto">
         <h3 className="font-medium mb-2">What will be installed:</h3>
         <ul className="text-sm text-muted-foreground space-y-1">
-          <li>• <strong>OpenClaw</strong> — Open-source clipboard security</li>
-          <li>• <strong>NemoClaw</strong> — Enhanced security features</li>
+          <li>• <strong>OpenClaw</strong> — Personal AI assistant runtime and CLI</li>
+          <li>• <strong>NemoClaw</strong> — NVIDIA secure sandbox stack for running OpenClaw</li>
         </ul>
       </div>
 

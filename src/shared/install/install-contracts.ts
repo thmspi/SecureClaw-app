@@ -11,12 +11,19 @@ export interface PrerequisiteCheck {
     value?: string;
     required?: string;
     message: string;
+    action?: 'start-docker-daemon';
   };
 }
 
 export interface PrerequisiteResult {
   allPassed: boolean;
   checks: PrerequisiteCheck[];
+}
+
+export interface StartDockerDaemonResult {
+  started: boolean;
+  ready: boolean;
+  message: string;
 }
 
 export interface InstallProgress {

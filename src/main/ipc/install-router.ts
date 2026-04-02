@@ -4,7 +4,10 @@ import {
   installStartSchema,
 } from '../../shared/install/install-channels';
 import { installOrchestrator } from '../install/install-orchestrator';
-import { runAllPrerequisiteChecks } from '../install/prerequisite-service';
+import {
+  runAllPrerequisiteChecks,
+  startDockerDaemonIfNeeded,
+} from '../install/prerequisite-service';
 
 export function registerInstallHandlers(
   ipc: typeof ipcMain,
@@ -46,5 +49,10 @@ export function registerInstallHandlers(
   // Run prerequisite checks
   ipc.handle(INSTALL_CHANNELS.runPrerequisites, async () => {
     return runAllPrerequisiteChecks();
+  });
+
+  // Start Docker daemon for NemoClaw prerequisites
+  ipc.handle(INSTALL_CHANNELS.startDockerDaemon, async () => {
+    return startDockerDaemonIfNeeded();
   });
 }

@@ -12,7 +12,7 @@ import { InstallProgress } from '@/components/wizard/InstallProgress';
 import { ErrorPanel } from '@/components/wizard/ErrorPanel';
 import { useWizardStore } from '@/stores/wizard-store';
 import { useInstallProgress } from '@/hooks/use-install-progress';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 export function InstallStep() {
   const install = useWizardStore((s) => s.install);
@@ -34,10 +34,15 @@ export function InstallStep() {
     await retry();
   };
 
-  // Auto-advance to complete step when install finishes
-  if (install.status === 'completed') {
-    setStep('complete');
-  }
+  const handleFailedCancel = async () => {
+    await cancel();
+  };
+
+  useEffect(() => {
+    if (install.status === 'completed') {
+      setStep('complete');
+    }
+  }, [install.status, setStep]);
 
   return (
     <div className="p-6 space-y-6">
@@ -103,7 +108,7 @@ export function InstallStep() {
           message={install.error.message}
           details={install.error.details}
           onRetry={handleRetry}
-          onCancel={() => setCancelDialogOpen(true)}
+          onCancel={handleFailedCancel}
         />
       )}
     </div>

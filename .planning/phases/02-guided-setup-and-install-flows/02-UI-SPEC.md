@@ -75,9 +75,9 @@ Accent reserved for: **Primary CTA buttons, wizard step indicator active state, 
 |---------|------|
 | Welcome heading | "Welcome to SecureClaw" |
 | Welcome body | "Let's get you set up. This wizard will guide you through prerequisites and installation." |
-| Primary CTA | "Install OpenClaw" / "Install NemoClaw" |
+| Primary CTA | "Install Now" |
 | Empty state heading | "No installations yet" |
-| Empty state body | "Complete the setup wizard to install OpenClaw or NemoClaw." |
+| Empty state body | "Complete the setup wizard to install OpenClaw first, then NVIDIA NemoClaw." |
 | Error state | "{Step} failed — Check your internet connection and try again, or expand details for more info." |
 | Destructive confirmation | "Cancel Installation: This will remove downloaded files and return to setup. Continue?" |
 
@@ -123,7 +123,7 @@ Based on CONTEXT.md decisions (D-01 through D-16), this phase requires:
 - Per-item status: green checkmark / red X with fix instructions
 
 ### Install Progress (from D-09 through D-12)
-- Named steps with overall progress: "Downloading OpenClaw... Step 2 of 5"
+- Named steps with overall progress: "Installing OpenClaw... Step 1 of 5", then "Installing NemoClaw... Step 3 of 5"
 - Raw log hidden by default, "Show details" to expand
 - Estimated time remaining when determinable
 - Inline error with plain-language explanation

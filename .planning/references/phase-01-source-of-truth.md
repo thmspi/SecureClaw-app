@@ -8,6 +8,12 @@ These upstream sources are treated as canonical references for implementing basi
 - NemoClaw repository: https://github.com/NVIDIA/NemoClaw
 - OpenClaw product docs/site: https://openclaw.ai/
 
+## Product Intent (Canonical)
+
+- **OpenClaw** is the personal AI assistant runtime/CLI users ultimately operate.
+- **NemoClaw** is the NVIDIA reference stack that runs OpenClaw with OpenShell-based sandboxing and hardened controls.
+- SecureClaw's install flow should make this explicit and perform installation in sequence: OpenClaw first, then NemoClaw, with verification after each.
+
 ## Usage Notes
 
 - SecureClaw integration and management behavior should align with these upstream definitions.

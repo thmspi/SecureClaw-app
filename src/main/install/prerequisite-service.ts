@@ -2,7 +2,17 @@ import { spawn } from 'child_process';
 import { statfsSync, mkdirSync, rmdirSync } from 'fs';
 import { app, net } from 'electron';
 import { join } from 'path';
-import type { PrerequisiteCheck, PrerequisiteResult } from '../../shared/install';
+import type {
+  PrerequisiteCheck,
+  PrerequisiteResult,
+  StartDockerDaemonResult,
+} from '../../shared/install';
+
+function isDevInstallSimulationEnabled(): boolean {
+  const flag = process.env.SECURECLAW_DEV_SIMULATE_INSTALL?.trim().toLowerCase();
+  const enabled = flag === '1' || flag === 'true' || flag === 'yes' || flag === 'on';
+  return enabled && process.env.NODE_ENV !== 'production';
+}
 
 /**
  * Collects stdout/stderr from a spawned process and resolves on successful exit
@@ -21,6 +31,7 @@ async function collectOutput(proc: ReturnType<typeof spawn>): Promise<string> {
   });
 }
 
+
 /**
  * Compare semantic versions (a >= b)
  */
@@ -33,10 +44,10 @@ function semverGte(a: string, b: string): boolean {
 }
 
 /**
- * Check Node.js version (requires >= 18.0.0)
+ * Check Node.js version (OpenClaw requires >= 22.12.0)
  */
 async function checkNodeVersion(): Promise<PrerequisiteCheck> {
-  const minVersion = '18.0.0';
+  const minVersion = '22.12.0';
   try {
     const proc = spawn('node', ['--version']);
     const output = await collectOutput(proc);
@@ -50,7 +61,7 @@ async function checkNodeVersion(): Promise<PrerequisiteCheck> {
       result: {
         value: version,
         required: `>= ${minVersion}`,
-        message: passed ? 'Installed' : `Requires ${minVersion}+`,
+        message: passed ? 'Installed' : `OpenClaw requires Node.js ${minVersion}+`,
       },
     };
   } catch {
@@ -59,9 +70,109 @@ async function checkNodeVersion(): Promise<PrerequisiteCheck> {
       name: 'Node.js',
       description: 'Node.js runtime',
       status: 'failed',
-      result: { required: `>= ${minVersion}`, message: 'Not found. Install from nodejs.org' },
+      result: {
+        required: `>= ${minVersion}`,
+        message: `Not found. OpenClaw requires Node.js ${minVersion}+`,
+      },
     };
   }
+}
+
+/**
+ * Check Docker installation.
+ * NemoClaw install requires the daemon at runtime, but installer will try to start it.
+ */
+async function checkDocker(): Promise<PrerequisiteCheck> {
+  try {
+    const versionProc = spawn('docker', ['--version']);
+    const versionOutput = await collectOutput(versionProc);
+    const version = versionOutput.trim().replace(/^Docker version /, '');
+
+    try {
+      const infoProc = spawn('docker', ['info', '--format', '{{.ServerVersion}}']);
+      const serverVersion = (await collectOutput(infoProc)).trim();
+      return {
+        id: 'docker-daemon',
+        name: 'Docker',
+        description: 'Docker CLI required for NemoClaw install',
+        status: 'passed',
+        result: {
+          value: serverVersion.length > 0 ? serverVersion : version,
+          message: 'Running',
+        },
+      };
+    } catch {
+      return {
+        id: 'docker-daemon',
+        name: 'Docker',
+        description: 'Docker CLI required for NemoClaw install',
+        status: 'failed',
+        result: {
+          value: version,
+          message: 'Installed but daemon is not running.',
+          action: 'start-docker-daemon',
+        },
+      };
+    }
+  } catch {
+    return {
+      id: 'docker-daemon',
+      name: 'Docker',
+      description: 'Docker CLI required for NemoClaw install',
+      status: 'failed',
+      result: {
+        message: 'Docker not found. Install Docker Desktop and retry.',
+      },
+    };
+  }
+}
+
+async function isDockerDaemonRunning(): Promise<boolean> {
+  try {
+    const infoProc = spawn('docker', ['info', '--format', '{{.ServerVersion}}']);
+    await collectOutput(infoProc);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Attempt to start Docker daemon on macOS.
+ * This call is non-blocking and does not wait for full readiness.
+ */
+export async function startDockerDaemonIfNeeded(): Promise<StartDockerDaemonResult> {
+  try {
+    const versionProc = spawn('docker', ['--version']);
+    await collectOutput(versionProc);
+  } catch {
+    throw new Error('Docker not found. Install Docker Desktop and retry.');
+  }
+
+  if (await isDockerDaemonRunning()) {
+    return {
+      started: false,
+      ready: true,
+      message: 'Docker daemon already running.',
+    };
+  }
+
+  if (process.platform !== 'darwin') {
+    throw new Error('Docker daemon is not running. Start Docker and retry.');
+  }
+
+  const launchProc = spawn('open', ['-a', 'Docker']);
+  try {
+    await collectOutput(launchProc);
+  } catch {
+    throw new Error('Failed to launch Docker Desktop. Open Docker manually and retry.');
+  }
+
+  return {
+    started: true,
+    ready: false,
+    message: 'Docker Desktop launched. Wait for Engine running, then click Re-check.',
+  };
 }
 
 /**
@@ -100,6 +211,89 @@ async function checkPython(): Promise<PrerequisiteCheck> {
     description: 'Python runtime',
     status: 'failed',
     result: { required: `>= ${minVersion}`, message: 'Not found. Install from python.org' },
+  };
+}
+
+/**
+ * Resolve expected OpenShell release asset for current host.
+ */
+function getOpenshellAssetName(): string | null {
+  if (process.platform === 'darwin') {
+    if (process.arch === 'x64') {
+      return 'openshell-x86_64-apple-darwin.tar.gz';
+    }
+    if (process.arch === 'arm64') {
+      return 'openshell-aarch64-apple-darwin.tar.gz';
+    }
+  }
+  if (process.platform === 'linux') {
+    if (process.arch === 'x64') {
+      return 'openshell-x86_64-unknown-linux-musl.tar.gz';
+    }
+    if (process.arch === 'arm64') {
+      return 'openshell-aarch64-unknown-linux-musl.tar.gz';
+    }
+  }
+  return null;
+}
+
+/**
+ * Check that the OpenShell release artifact needed by NemoClaw exists.
+ */
+async function checkOpenshellReleaseAsset(): Promise<PrerequisiteCheck> {
+  const asset = getOpenshellAssetName();
+  if (!asset) {
+    return {
+      id: 'openshell-asset',
+      name: 'OpenShell Asset',
+      description: 'Required OpenShell release artifact for this platform',
+      status: 'failed',
+      result: {
+        value: `${process.platform} ${process.arch}`,
+        message: 'Unsupported platform/architecture for OpenShell install.',
+      },
+    };
+  }
+
+  const assetUrl = `https://github.com/NVIDIA/OpenShell/releases/latest/download/${asset}`;
+  try {
+    const probe = spawn('curl', ['-fsSLI', '--max-time', '20', assetUrl]);
+    await collectOutput(probe);
+    return {
+      id: 'openshell-asset',
+      name: 'OpenShell Asset',
+      description: 'Required OpenShell release artifact for this platform',
+      status: 'passed',
+      result: {
+        value: asset,
+        message: 'Available',
+      },
+    };
+  } catch {
+    return {
+      id: 'openshell-asset',
+      name: 'OpenShell Asset',
+      description: 'Required OpenShell release artifact for this platform',
+      status: 'failed',
+      result: {
+        value: asset,
+        message:
+          'Latest OpenShell release asset is unavailable for this platform right now (HTTP 404/unreachable).',
+      },
+    };
+  }
+}
+
+function checkNemoclawPlatformSupport(): PrerequisiteCheck {
+  return {
+    id: 'nemoclaw-platform',
+    name: 'NemoClaw Platform',
+    description: 'Host compatibility for NemoClaw runtime stack',
+    status: 'passed',
+    result: {
+      value: `${process.platform} ${process.arch}`,
+      message: 'Supported',
+    },
   };
 }
 
@@ -178,9 +372,30 @@ async function checkNetwork(): Promise<PrerequisiteCheck> {
  * Run all prerequisite checks in parallel
  */
 export async function runAllPrerequisiteChecks(): Promise<PrerequisiteResult> {
+  if (isDevInstallSimulationEnabled()) {
+    return {
+      allPassed: true,
+      checks: [
+        {
+          id: 'dev-sim-install',
+          name: 'Dev Install Simulation',
+          description: 'Development-mode install bypass',
+          status: 'warning',
+          result: {
+            message:
+              'SECURECLAW_DEV_SIMULATE_INSTALL=1 is enabled. Real prerequisite checks are bypassed.',
+          },
+        },
+      ],
+    };
+  }
+
   const checks = await Promise.all([
     checkNodeVersion(),
     checkPython(),
+    checkDocker(),
+    checkOpenshellReleaseAsset(),
+    Promise.resolve(checkNemoclawPlatformSupport()),
     Promise.resolve(checkDiskSpace()),
     Promise.resolve(checkWritePermissions()),
     checkNetwork(),

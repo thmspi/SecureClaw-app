@@ -1,6 +1,6 @@
 # SecureClaw App
 
-Secure clipboard manager built with Electron, TypeScript, and React.
+Desktop installer and lifecycle manager for OpenClaw and NVIDIA NemoClaw, built with Electron, TypeScript, and React.
 
 ## Project Structure
 
@@ -19,10 +19,14 @@ SecureClaw-app/
 
 ## Available Scripts
 
-- `npm run dev` - Start development server with Vite
-- `npm run build` - Build the application
-- `npm run build:main` - Build main process only
-- `npm run build:renderer` - Build renderer process only
+- `npm run dev` - Start renderer development server (Vite)
+- `npm run dev:renderer` - Same as `dev`
+- `npm run dev:desktop` - Build main/preload and launch Electron against local Vite URL (`http://localhost:3000`)
+- `npm run dev:desktop:sim-install` - Launch desktop with `SECURECLAW_DEV_SIMULATE_INSTALL=1` to simulate all install steps (no real OpenClaw/NemoClaw install)
+- `npm run start` - Build main + renderer and launch Electron using built assets
+- `npm run build` - Build main + preload + shared + renderer
+- `npm run build:main` - Build main/preload/shared only
+- `npm run build:renderer` - Build renderer only
 - `npm test` - Run Jest tests
 - `npm run test:watch` - Run Jest in watch mode
 - `npm run type-check` - Run TypeScript type checking
@@ -65,9 +69,16 @@ This project is set up for Test-Driven Development (TDD):
 
 ## Getting Started
 
-The project scaffolding is now complete. Begin implementing features by:
+For full desktop app UAT:
 
-1. Creating test files in the appropriate directory
-2. Writing failing tests
-3. Implementing the functionality
-4. Verifying with `npm test` and `npm run type-check`
+1. Terminal A: `npm run dev:renderer`
+2. Terminal B: `npm run dev:desktop`
+
+For built app run:
+
+1. `npm run start`
+
+For development on unsupported hardware (simulate install flow only):
+
+1. Terminal A: `npm run dev:renderer`
+2. Terminal B: `npm run dev:desktop:sim-install`

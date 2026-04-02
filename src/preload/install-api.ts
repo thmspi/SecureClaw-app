@@ -5,6 +5,7 @@ import type {
   InstallError,
   InstallState,
   PrerequisiteResult,
+  StartDockerDaemonResult,
 } from '../shared/install/install-contracts';
 
 export const installAPI = {
@@ -39,6 +40,12 @@ export const installAPI = {
    */
   runPrerequisites: (): Promise<PrerequisiteResult> =>
     ipcRenderer.invoke(INSTALL_CHANNELS.runPrerequisites),
+
+  /**
+   * Start Docker daemon when installed but not yet running
+   */
+  startDockerDaemon: (): Promise<StartDockerDaemonResult> =>
+    ipcRenderer.invoke(INSTALL_CHANNELS.startDockerDaemon),
 
   // Event subscriptions - return unsubscribe function for cleanup
 

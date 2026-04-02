@@ -1,9 +1,12 @@
 import { cn } from '@/lib/utils';
 import { PrerequisiteCheck } from '@/stores/wizard-store';
+import { Button } from '@/components/ui/button';
 import { CheckCircle2, XCircle, AlertCircle, Loader2 } from 'lucide-react';
 
 interface PrerequisiteChecklistProps {
   checks: PrerequisiteCheck[];
+  onStartDockerDaemon?: () => void | Promise<void>;
+  dockerStartPending?: boolean;
 }
 
 const statusIcons = {
@@ -20,7 +23,11 @@ const statusColors = {
   pending: 'text-muted-foreground',
 };
 
-export function PrerequisiteChecklist({ checks }: PrerequisiteChecklistProps) {
+export function PrerequisiteChecklist({
+  checks,
+  onStartDockerDaemon,
+  dockerStartPending = false,
+}: PrerequisiteChecklistProps) {
   if (checks.length === 0) {
     return null;
   }
@@ -55,6 +62,21 @@ export function PrerequisiteChecklist({ checks }: PrerequisiteChecklistProps) {
               <p className="text-xs text-muted-foreground mt-0.5">
                 {check.result.message}
               </p>
+              {check.result.action === 'start-docker-daemon' && onStartDockerDaemon && (
+                <div className="mt-2">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      void onStartDockerDaemon();
+                    }}
+                    disabled={dockerStartPending}
+                  >
+                    {dockerStartPending ? 'Starting Docker...' : 'Start Docker Daemon'}
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
         );

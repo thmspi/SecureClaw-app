@@ -26,6 +26,7 @@ export function InstallProgress({
   logs,
 }: InstallProgressProps) {
   const [showDetails, setShowDetails] = useState(false);
+  const completedSteps = Math.max(0, Math.min(totalSteps, currentStep - 1));
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -43,7 +44,9 @@ export function InstallProgress({
           <span className="font-medium">
             {stepName}... Step {currentStep} of {totalSteps}
           </span>
-          <span className="text-muted-foreground">{Math.round(progress)}%</span>
+          <span className="text-muted-foreground">
+            {completedSteps}/{totalSteps} completed
+          </span>
         </div>
         <Progress value={progress} className="h-2" />
         {estimatedTimeRemaining !== undefined && estimatedTimeRemaining > 0 && (

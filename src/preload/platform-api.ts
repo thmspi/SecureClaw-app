@@ -14,6 +14,7 @@ import type {
   InstallError,
   InstallState,
   PrerequisiteResult,
+  StartDockerDaemonResult,
 } from '../shared/install/install-contracts';
 
 // Narrow platform API - only approved operations
@@ -49,6 +50,9 @@ const installAPI = {
 
   runPrerequisites: (): Promise<PrerequisiteResult> =>
     ipcRenderer.invoke(INSTALL_CHANNELS.runPrerequisites),
+
+  startDockerDaemon: (): Promise<StartDockerDaemonResult> =>
+    ipcRenderer.invoke(INSTALL_CHANNELS.startDockerDaemon),
 
   // Event subscriptions - return unsubscribe function
   onProgress: (callback: (progress: InstallProgress) => void) => {

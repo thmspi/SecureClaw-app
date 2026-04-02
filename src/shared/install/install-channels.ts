@@ -7,6 +7,7 @@ export const INSTALL_CHANNELS = {
   retry: 'install:v1:retry',
   getState: 'install:v1:getState',
   runPrerequisites: 'install:v1:runPrerequisites',
+  startDockerDaemon: 'install:v1:startDockerDaemon',
   // Events (main → renderer)
   progress: 'install:v1:progress',
   error: 'install:v1:error',
@@ -41,6 +42,7 @@ export const prerequisiteResultSchema = z.object({
         value: z.string().optional(),
         required: z.string().optional(),
         message: z.string(),
+        action: z.literal('start-docker-daemon').optional(),
       }),
     })
   ),

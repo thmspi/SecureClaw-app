@@ -26,7 +26,7 @@ A low-technical user can complete first-run setup and installation from the app 
 - **D-08:** Automatic checks on wizard step entry with manual "Re-check" button.
 
 ### Install Progress
-- **D-09:** Named steps with overall progress bar (e.g., "Downloading OpenClaw... Step 2 of 5").
+- **D-09:** Named steps with overall progress bar that reflect real install intent (e.g., "Installing OpenClaw... Step 1 of 5", then "Installing NemoClaw... Step 3 of 5").
 - **D-10:** Raw log output hidden by default, expandable "Show details" panel for power users.
 - **D-11:** Inline error display with plain-language explanation and expandable "What went wrong" technical details.
 - **D-12:** Show estimated time remaining when determinable.
@@ -65,6 +65,10 @@ A low-technical user can complete first-run setup and installation from the app 
 
 ### Upstream product reference
 - `.planning/references/phase-01-source-of-truth.md` — OpenClaw/NemoClaw installation behavior.
+
+### Intent clarity
+- OpenClaw is the primary assistant runtime being installed for user operations.
+- NemoClaw is the secure execution layer that installs after OpenClaw and augments runtime safety.
 
 </canonical_refs>
 

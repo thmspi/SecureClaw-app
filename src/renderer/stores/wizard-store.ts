@@ -9,7 +9,12 @@ export interface PrerequisiteCheck {
   name: string;
   description: string;
   status: PrerequisiteStatus;
-  result: { value?: string; required?: string; message: string };
+  result: {
+    value?: string;
+    required?: string;
+    message: string;
+    action?: 'start-docker-daemon';
+  };
 }
 
 export interface InstallProgressState {
@@ -36,6 +41,7 @@ interface WizardState {
   setStep: (step: WizardStep) => void;
   canNavigateTo: (step: WizardStep) => boolean;
   setPrerequisitesLoading: (loading: boolean) => void;
+  setPrerequisites: (checks: Record<string, PrerequisiteCheck>) => void;
   updatePrerequisite: (id: string, check: PrerequisiteCheck) => void;
   setAllPrerequisitesPassed: (passed: boolean) => void;
   updateInstallProgress: (progress: Partial<InstallProgressState>) => void;
@@ -47,7 +53,7 @@ interface WizardState {
 const initialInstallState: InstallProgressState = {
   status: 'idle',
   currentStep: 0,
-  totalSteps: 5,
+  totalSteps: 6,
   stepName: '',
   progress: 0,
   logs: [],
@@ -80,6 +86,8 @@ export const useWizardStore = create<WizardState>()(
       },
 
       setPrerequisitesLoading: (loading) => set({ prerequisitesLoading: loading }),
+
+      setPrerequisites: (checks) => set({ prerequisites: checks }),
 
       updatePrerequisite: (id, check) =>
         set((s) => ({

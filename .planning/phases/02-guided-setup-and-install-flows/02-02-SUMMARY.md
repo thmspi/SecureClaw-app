@@ -25,9 +25,9 @@ Complete wizard UI with state management, step navigation, and all visual compon
    - `ErrorPanel.tsx` - D-11 error display with expandable details
 
 3. **Step Pages** (`src/renderer/pages/wizard/`)
-   - `WelcomeStep.tsx` - D-01 welcome with target selection
+   - `WelcomeStep.tsx` - D-01 welcome with role clarity (OpenClaw runtime + NemoClaw secure stack)
    - `PrerequisitesStep.tsx` - D-05/D-08 check display with Re-check button
-   - `InstallStep.tsx` - D-09/D-14 install with cancel dialog
+   - `InstallStep.tsx` - D-09/D-14 install with cancel dialog and single sequential install CTA
    - `CompleteStep.tsx` - Success state with reset option
 
 4. **Main Container** (`src/renderer/pages/wizard/WizardPage.tsx`)
