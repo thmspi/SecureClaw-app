@@ -30,6 +30,7 @@
   "dependencies": {
     "@fontsource-variable/figtree": "^5.2.10",
     "@fontsource-variable/geist": "^5.2.8",
+    "better-sqlite3": "^12.8.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "electron": "^41.1.1",
@@ -46,6 +47,7 @@
   "devDependencies": {
     "@jest/globals": "^30.3.0",
     "@tailwindcss/vite": "^4.2.2",
+    "@types/better-sqlite3": "^7.6.13",
     "@types/jest": "^30.0.0",
     "@types/node": "^25.5.0",
     "@types/react": "^19.2.14",
