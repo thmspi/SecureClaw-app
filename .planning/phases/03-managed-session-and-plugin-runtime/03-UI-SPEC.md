@@ -1,10 +1,11 @@
 ---
 phase: 3
 slug: managed-session-and-plugin-runtime
-status: draft
+status: approved
 shadcn_initialized: true
 preset: b3cVZaBjQw
 created: 2026-04-02
+reviewed_at: 2026-04-02
 ---
 
 # Phase 3 — UI Design Contract
@@ -244,14 +245,14 @@ Install command: `npx shadcn add table select input tooltip separator`
 
 ## Checker Sign-Off
 
-- [ ] Dimension 1 Copywriting: PENDING
-- [ ] Dimension 2 Visuals: PENDING
-- [ ] Dimension 3 Color: PENDING
-- [ ] Dimension 4 Typography: PENDING
-- [ ] Dimension 5 Spacing: PENDING
-- [ ] Dimension 6 Registry Safety: PENDING
+- [x] Dimension 1 Copywriting: PASS
+- [x] Dimension 2 Visuals: PASS
+- [x] Dimension 3 Color: PASS
+- [x] Dimension 4 Typography: FLAG (3 weights — matches approved Phase 2 precedent)
+- [x] Dimension 5 Spacing: PASS
+- [x] Dimension 6 Registry Safety: PASS
 
-**Approval:** pending
+**Approval:** approved 2026-04-02
 
 ---
 
