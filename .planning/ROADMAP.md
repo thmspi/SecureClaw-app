@@ -59,7 +59,12 @@ Plans:
   2. User can stop an active session from the app and see confirmed shutdown state.
   3. User can trigger plugin execution from the app and monitor progress and completion status.
   4. Runtime operation history persists locally and remains available for troubleshooting after app restart.
-**Plans**: TBD
+**Plans**: 4 plans
+Plans:
+- [ ] 03-01-PLAN.md — Session lifecycle foundation with state machine and runtime history persistence
+- [ ] 03-02-PLAN.md — Plugin execution engine with capped concurrency queue
+- [ ] 03-03-PLAN.md — Runtime IPC routing and Management store integration
+- [ ] 03-04-PLAN.md — Management page UI with session control, plugin runs, and history
 **UI hint**: yes
 
 ### Phase 4: Diagnostics, Security Storage, and macOS Distribution Baseline
