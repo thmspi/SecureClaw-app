@@ -71,7 +71,7 @@ describe('runtime-router', () => {
 
     const { setMainWindow } = await import('./runtime-router');
     const send = jest.fn();
-    setMainWindow({ webContents: { send } } as any);
+    setMainWindow({ isDestroyed: () => false, webContents: { send } } as any);
 
     await callHandler(RUNTIME_CHANNELS.startSession, { sessionId: 'session-1' });
 
@@ -108,7 +108,7 @@ describe('runtime-router', () => {
 
     const { setMainWindow } = await import('./runtime-router');
     const send = jest.fn();
-    setMainWindow({ webContents: { send } } as any);
+    setMainWindow({ isDestroyed: () => false, webContents: { send } } as any);
 
     await callHandler(RUNTIME_CHANNELS.runPlugin, {
       runId: 'run-1',
