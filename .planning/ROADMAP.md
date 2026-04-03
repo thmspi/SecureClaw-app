@@ -14,7 +14,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 - [ ] **Phase 1: Platform Core and Safety Boundaries** - Centralize process/path/binary and IPC safety foundations for macOS-first, Windows-ready behavior.
 - [ ] **Phase 2: Guided Setup and Install Flows** - Deliver no-terminal onboarding with prerequisite checks and resilient install lifecycle.
-- [ ] **Phase 3: Managed Session and Plugin Runtime** - Deliver day-to-day start/stop/plugin operations with persistent runtime history.
+- [x] **Phase 3: Managed Session and Plugin Runtime** - Deliver day-to-day start/stop/plugin operations with persistent runtime history.
 - [ ] **Phase 4: Diagnostics, Security Storage, and macOS Distribution Baseline** - Deliver support clarity, health visibility, secure local secret handling, and signed macOS packaging.
 
 ## Phase Details
@@ -59,7 +59,12 @@ Plans:
   2. User can stop an active session from the app and see confirmed shutdown state.
   3. User can trigger plugin execution from the app and monitor progress and completion status.
   4. Runtime operation history persists locally and remains available for troubleshooting after app restart.
-**Plans**: TBD
+**Plans**: 4 plans
+Plans:
+- [x] 03-01-PLAN.md — Session lifecycle foundation with state machine and runtime history persistence
+- [x] 03-02-PLAN.md — Plugin execution engine with capped concurrency queue
+- [x] 03-03-PLAN.md — Runtime IPC routing and Management store integration
+- [x] 03-04-PLAN.md — Management page UI with session control, plugin runs, and history
 **UI hint**: yes
 
 ### Phase 4: Diagnostics, Security Storage, and macOS Distribution Baseline
@@ -84,5 +89,5 @@ Phases execute in numeric order: 1 -> 1.1 -> 2 -> 2.1 -> 3 -> 3.1 -> 4
 |-------|----------------|--------|-----------|
 | 1. Platform Core and Safety Boundaries | 0/3 | Not started | - |
 | 2. Guided Setup and Install Flows | 0/TBD | Not started | - |
-| 3. Managed Session and Plugin Runtime | 0/TBD | Not started | - |
+| 3. Managed Session and Plugin Runtime | 4/4 | Complete | 2026-04-03 |
 | 4. Diagnostics, Security Storage, and macOS Distribution Baseline | 0/TBD | Not started | - |

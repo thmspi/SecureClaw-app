@@ -55,4 +55,9 @@ export function registerInstallHandlers(
   ipc.handle(INSTALL_CHANNELS.startDockerDaemon, async () => {
     return startDockerDaemonIfNeeded();
   });
+
+  // Uninstall OpenClaw/NemoClaw stack binaries
+  ipc.handle(INSTALL_CHANNELS.uninstallStack, async () => {
+    return installOrchestrator.uninstallStack();
+  });
 }

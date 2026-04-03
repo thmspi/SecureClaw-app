@@ -8,6 +8,7 @@ export const INSTALL_CHANNELS = {
   getState: 'install:v1:getState',
   runPrerequisites: 'install:v1:runPrerequisites',
   startDockerDaemon: 'install:v1:startDockerDaemon',
+  uninstallStack: 'install:v1:uninstallStack',
   // Events (main → renderer)
   progress: 'install:v1:progress',
   error: 'install:v1:error',

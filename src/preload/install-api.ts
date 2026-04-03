@@ -6,6 +6,7 @@ import type {
   InstallState,
   PrerequisiteResult,
   StartDockerDaemonResult,
+  UninstallStackResult,
 } from '../shared/install/install-contracts';
 
 export const installAPI = {
@@ -46,6 +47,12 @@ export const installAPI = {
    */
   startDockerDaemon: (): Promise<StartDockerDaemonResult> =>
     ipcRenderer.invoke(INSTALL_CHANNELS.startDockerDaemon),
+
+  /**
+   * Uninstall OpenClaw/NemoClaw binaries from the machine
+   */
+  uninstallStack: (): Promise<UninstallStackResult> =>
+    ipcRenderer.invoke(INSTALL_CHANNELS.uninstallStack),
 
   // Event subscriptions - return unsubscribe function for cleanup
 
