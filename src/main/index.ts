@@ -2,6 +2,11 @@ import { app, BrowserWindow, ipcMain } from 'electron';
 import path from 'path';
 import { registerInstallHandlers } from './ipc/install-router';
 import { registerPlatformHandlers } from './ipc/platform-router';
+import {
+  registerRuntimeHandlers,
+  setMainWindow as setRuntimeMainWindow,
+  initializeRuntimeHistoryTracking,
+} from './ipc/runtime-router';
 import { installOrchestrator } from './install/install-orchestrator';
 
 const devServerUrl = process.env.VITE_DEV_SERVER_URL;
@@ -46,12 +51,16 @@ async function loadDevServerWithRetry(
 
 function registerIpcHandlers(mainWindow: BrowserWindow): void {
   if (handlersRegistered) {
+    setRuntimeMainWindow(mainWindow);
     installOrchestrator.setWindow(mainWindow);
     return;
   }
 
   registerPlatformHandlers(ipcMain);
+  registerRuntimeHandlers(ipcMain);
   registerInstallHandlers(ipcMain, mainWindow);
+  initializeRuntimeHistoryTracking();
+  setRuntimeMainWindow(mainWindow);
   handlersRegistered = true;
 }
 
