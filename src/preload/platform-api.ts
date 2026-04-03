@@ -1,6 +1,7 @@
 import { contextBridge, ipcRenderer } from 'electron';
 import { PLATFORM_CHANNELS } from '../shared/ipc/platform-channels';
 import { INSTALL_CHANNELS } from '../shared/install/install-channels';
+import { RUNTIME_CHANNELS } from '../shared/ipc/runtime-channels';
 import type {
   RunProcessRequest,
   RunProcessResponse,
@@ -16,6 +17,23 @@ import type {
   PrerequisiteResult,
   StartDockerDaemonResult,
 } from '../shared/install/install-contracts';
+import type {
+  StartSessionRequest,
+  StartSessionResponse,
+  StopSessionRequest,
+  StopSessionResponse,
+  GetSessionsResponse,
+  RunPluginRequest,
+  RunPluginResponse,
+  CancelPluginRequest,
+  CancelPluginResponse,
+  GetPluginRunsRequest,
+  GetPluginRunsResponse,
+  GetHistoryRequest,
+  GetHistoryResponse,
+  SessionEvent,
+  PluginEvent,
+} from '../shared/runtime/runtime-contracts';
 
 // Narrow platform API - only approved operations
 const platformAPI = {
@@ -74,10 +92,45 @@ const installAPI = {
   },
 };
 
+const runtimeAPI = {
+  startSession: (request: StartSessionRequest): Promise<StartSessionResponse> =>
+    ipcRenderer.invoke(RUNTIME_CHANNELS.startSession, request),
+
+  stopSession: (request: StopSessionRequest): Promise<StopSessionResponse> =>
+    ipcRenderer.invoke(RUNTIME_CHANNELS.stopSession, request),
+
+  getSessions: (): Promise<GetSessionsResponse> => ipcRenderer.invoke(RUNTIME_CHANNELS.getSessions, {}),
+
+  runPlugin: (request: RunPluginRequest): Promise<RunPluginResponse> =>
+    ipcRenderer.invoke(RUNTIME_CHANNELS.runPlugin, request),
+
+  cancelPluginRun: (request: CancelPluginRequest): Promise<CancelPluginResponse> =>
+    ipcRenderer.invoke(RUNTIME_CHANNELS.cancelPluginRun, request),
+
+  getPluginRuns: (request: GetPluginRunsRequest): Promise<GetPluginRunsResponse> =>
+    ipcRenderer.invoke(RUNTIME_CHANNELS.getPluginRuns, request),
+
+  getHistory: (request: GetHistoryRequest): Promise<GetHistoryResponse> =>
+    ipcRenderer.invoke(RUNTIME_CHANNELS.getHistory, request),
+
+  onSessionEvent: (callback: (event: SessionEvent) => void) => {
+    const handler = (_: unknown, data: SessionEvent) => callback(data);
+    ipcRenderer.on(RUNTIME_CHANNELS.sessionEvent, handler);
+    return () => ipcRenderer.removeListener(RUNTIME_CHANNELS.sessionEvent, handler);
+  },
+
+  onPluginEvent: (callback: (event: PluginEvent) => void) => {
+    const handler = (_: unknown, data: PluginEvent) => callback(data);
+    ipcRenderer.on(RUNTIME_CHANNELS.pluginEvent, handler);
+    return () => ipcRenderer.removeListener(RUNTIME_CHANNELS.pluginEvent, handler);
+  },
+};
+
 // Expose to renderer via contextBridge - NO raw ipcRenderer
 contextBridge.exposeInMainWorld('secureClaw', {
   platform: platformAPI,
   install: installAPI,
+  runtime: runtimeAPI,
 });
 
 // Type declaration for renderer usage
@@ -86,6 +139,7 @@ declare global {
     secureClaw: {
       platform: typeof platformAPI;
       install: typeof installAPI;
+      runtime: typeof runtimeAPI;
     };
   }
 }
