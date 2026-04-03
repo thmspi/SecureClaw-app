@@ -33,6 +33,13 @@ import type {
   GetHistoryResponse,
   SessionEvent,
   PluginEvent,
+  ListPluginPackagesResponse,
+  ValidatePluginPackageRequest,
+  ValidatePluginPackageResponse,
+  ImportPluginPackageRequest,
+  ImportPluginPackageResponse,
+  UninstallPluginPackageRequest,
+  UninstallPluginPackageResponse,
 } from '../shared/runtime/runtime-contracts';
 
 // Narrow platform API - only approved operations
@@ -109,6 +116,24 @@ const runtimeAPI = {
 
   getPluginRuns: (request: GetPluginRunsRequest): Promise<GetPluginRunsResponse> =>
     ipcRenderer.invoke(RUNTIME_CHANNELS.getPluginRuns, request),
+
+  listPluginPackages: (): Promise<ListPluginPackagesResponse> =>
+    ipcRenderer.invoke(RUNTIME_CHANNELS.listPluginPackages, {}),
+
+  validatePluginPackage: (
+    request: ValidatePluginPackageRequest
+  ): Promise<ValidatePluginPackageResponse> =>
+    ipcRenderer.invoke(RUNTIME_CHANNELS.validatePluginPackage, request),
+
+  importPluginPackage: (
+    request: ImportPluginPackageRequest
+  ): Promise<ImportPluginPackageResponse> =>
+    ipcRenderer.invoke(RUNTIME_CHANNELS.importPluginPackage, request),
+
+  uninstallPluginPackage: (
+    request: UninstallPluginPackageRequest
+  ): Promise<UninstallPluginPackageResponse> =>
+    ipcRenderer.invoke(RUNTIME_CHANNELS.uninstallPluginPackage, request),
 
   getHistory: (request: GetHistoryRequest): Promise<GetHistoryResponse> =>
     ipcRenderer.invoke(RUNTIME_CHANNELS.getHistory, request),

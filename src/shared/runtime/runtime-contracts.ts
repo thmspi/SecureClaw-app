@@ -145,3 +145,49 @@ export interface GetPluginRunsRequest {
 export interface GetPluginRunsResponse {
   runs: PluginRun[];
 }
+
+export interface PluginPackage {
+  id: string;
+  displayName: string;
+  version?: string;
+  enabled: boolean;
+  description?: string;
+  source: 'local' | 'registry' | 'unknown';
+}
+
+export interface ListPluginPackagesResponse {
+  packages: PluginPackage[];
+  error?: string;
+}
+
+export interface ValidatePluginPackageRequest {
+  packageName: string;
+}
+
+export interface ValidatePluginPackageResponse {
+  valid: boolean;
+  packageName: string;
+  plugin?: PluginPackage;
+  error?: string;
+}
+
+export interface ImportPluginPackageRequest {
+  packageName: string;
+}
+
+export interface ImportPluginPackageResponse {
+  imported: boolean;
+  packageName: string;
+  plugin?: PluginPackage;
+  error?: string;
+}
+
+export interface UninstallPluginPackageRequest {
+  pluginId: string;
+}
+
+export interface UninstallPluginPackageResponse {
+  uninstalled: boolean;
+  pluginId: string;
+  error?: string;
+}

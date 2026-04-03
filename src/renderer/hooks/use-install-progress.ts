@@ -10,6 +10,11 @@ function isInstallApiAvailable(): boolean {
   return Boolean(window.secureClaw?.install?.start && window.secureClaw?.install?.onProgress);
 }
 
+function navigateToManagement(): void {
+  window.history.pushState({}, '', '/management');
+  window.dispatchEvent(new Event('secureclaw:navigate'));
+}
+
 function syncFromInstallState(
   state: InstallState,
   updateInstallProgress: ReturnType<typeof useWizardStore.getState>['updateInstallProgress']
@@ -81,7 +86,6 @@ function syncFromInstallState(
 export function useInstallProgress() {
   const updateInstallProgress = useWizardStore((s) => s.updateInstallProgress);
   const appendLog = useWizardStore((s) => s.appendLog);
-  const setStep = useWizardStore((s) => s.setStep);
   const lastLoggedProgressEvent = useRef<string>('');
 
   // Subscribe to IPC events on mount (only if Electron IPC available)
@@ -178,7 +182,7 @@ export function useInstallProgress() {
       unsubError();
       unsubComplete();
     };
-  }, [updateInstallProgress, appendLog, setStep]);
+  }, [updateInstallProgress, appendLog]);
 
   const start = async (target: 'openclaw' | 'nemoclaw') => {
     lastLoggedProgressEvent.current = '';
@@ -208,7 +212,7 @@ export function useInstallProgress() {
       throw new Error('Missing preload install API in Electron');
     } else {
       // Mock install simulation for browser dev
-      simulateMockInstall(updateInstallProgress, appendLog, setStep);
+      simulateMockInstall(updateInstallProgress, appendLog);
     }
   };
 
@@ -248,7 +252,7 @@ export function useInstallProgress() {
       appendLog('❌ Missing preload install API in Electron');
       throw new Error('Missing preload install API in Electron');
     } else {
-      simulateMockInstall(updateInstallProgress, appendLog, setStep);
+      simulateMockInstall(updateInstallProgress, appendLog);
     }
   };
 
@@ -258,8 +262,7 @@ export function useInstallProgress() {
 // Mock install simulation for browser dev mode
 function simulateMockInstall(
   updateInstallProgress: ReturnType<typeof useWizardStore.getState>['updateInstallProgress'],
-  appendLog: ReturnType<typeof useWizardStore.getState>['appendLog'],
-  setStep: ReturnType<typeof useWizardStore.getState>['setStep']
+  appendLog: ReturnType<typeof useWizardStore.getState>['appendLog']
 ) {
   const steps = [
     'Authorizing Installation...',
@@ -281,7 +284,7 @@ function simulateMockInstall(
         estimatedTimeRemaining: 0,
       });
       appendLog('✅ Installation completed successfully');
-      setStep('complete');
+      navigateToManagement();
       return;
     }
 

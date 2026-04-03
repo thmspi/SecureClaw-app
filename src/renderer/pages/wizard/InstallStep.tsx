@@ -16,7 +16,6 @@ import { useEffect, useState } from 'react';
 
 export function InstallStep() {
   const install = useWizardStore((s) => s.install);
-  const setStep = useWizardStore((s) => s.setStep);
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const { start, cancel, retry } = useInstallProgress();
 
@@ -40,9 +39,10 @@ export function InstallStep() {
 
   useEffect(() => {
     if (install.status === 'completed') {
-      setStep('complete');
+      window.history.pushState({}, '', '/management');
+      window.dispatchEvent(new Event('secureclaw:navigate'));
     }
-  }, [install.status, setStep]);
+  }, [install.status]);
 
   return (
     <div className="p-6 space-y-6">

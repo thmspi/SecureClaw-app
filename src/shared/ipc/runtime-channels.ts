@@ -8,6 +8,10 @@ export const RUNTIME_CHANNELS = {
   runPlugin: 'runtime:v1:runPlugin',
   cancelPluginRun: 'runtime:v1:cancelPluginRun',
   getPluginRuns: 'runtime:v1:getPluginRuns',
+  listPluginPackages: 'runtime:v1:listPluginPackages',
+  validatePluginPackage: 'runtime:v1:validatePluginPackage',
+  importPluginPackage: 'runtime:v1:importPluginPackage',
+  uninstallPluginPackage: 'runtime:v1:uninstallPluginPackage',
 
   getHistory: 'runtime:v1:getHistory',
 
@@ -55,6 +59,20 @@ export const getPluginRunsSchema = z.object({
   sessionId: z.string().optional(),
 });
 
+export const listPluginPackagesSchema = z.object({});
+
+export const validatePluginPackageSchema = z.object({
+  packageName: z.string().min(1),
+});
+
+export const importPluginPackageSchema = z.object({
+  packageName: z.string().min(1),
+});
+
+export const uninstallPluginPackageSchema = z.object({
+  pluginId: z.string().min(1),
+});
+
 export type StartSessionInput = z.infer<typeof startSessionSchema>;
 export type StopSessionInput = z.infer<typeof stopSessionSchema>;
 export type GetSessionsInput = z.infer<typeof getSessionsSchema>;
@@ -62,3 +80,7 @@ export type GetHistoryInput = z.infer<typeof getHistorySchema>;
 export type RunPluginInput = z.infer<typeof runPluginSchema>;
 export type CancelPluginInput = z.infer<typeof cancelPluginSchema>;
 export type GetPluginRunsInput = z.infer<typeof getPluginRunsSchema>;
+export type ListPluginPackagesInput = z.infer<typeof listPluginPackagesSchema>;
+export type ValidatePluginPackageInput = z.infer<typeof validatePluginPackageSchema>;
+export type ImportPluginPackageInput = z.infer<typeof importPluginPackageSchema>;
+export type UninstallPluginPackageInput = z.infer<typeof uninstallPluginPackageSchema>;

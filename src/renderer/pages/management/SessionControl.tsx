@@ -69,7 +69,9 @@ export default function SessionControl() {
               Active since {new Date(activeSession.activeAt).toLocaleString()}
             </p>
           ) : (
-            <p className="text-sm text-muted-foreground">Start a session to enable plugin operations</p>
+            <p className="text-sm text-muted-foreground">
+              Start a session to launch with your selected plugin packages
+            </p>
           )}
         </div>
 

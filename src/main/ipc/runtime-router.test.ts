@@ -21,9 +21,17 @@ const mockHistoryService = {
   getHistory: jest.fn(),
 };
 
+const mockPluginCatalogService = {
+  listPluginPackages: jest.fn(),
+  validatePluginPackage: jest.fn(),
+  importPluginPackage: jest.fn(),
+  uninstallPluginPackage: jest.fn(),
+};
+
 jest.mock('../runtime/session-orchestrator', () => mockSessionOrchestrator);
 jest.mock('../runtime/plugin-runner', () => mockPluginRunner);
 jest.mock('../runtime/runtime-history-service', () => mockHistoryService);
+jest.mock('../runtime/plugin-catalog-service', () => mockPluginCatalogService);
 
 const mockIpcMain = {
   handle: jest.fn(),
@@ -64,6 +72,19 @@ describe('runtime-router', () => {
     mockPluginRunner.getPluginRuns.mockReturnValue({ runs: [] });
 
     mockHistoryService.getHistory.mockReturnValue({ records: [], total: 0 });
+    mockPluginCatalogService.listPluginPackages.mockResolvedValue({ packages: [] });
+    mockPluginCatalogService.validatePluginPackage.mockResolvedValue({
+      valid: true,
+      packageName: 'acme/plugin',
+    });
+    mockPluginCatalogService.importPluginPackage.mockResolvedValue({
+      imported: true,
+      packageName: 'acme/plugin',
+    });
+    mockPluginCatalogService.uninstallPluginPackage.mockResolvedValue({
+      uninstalled: true,
+      pluginId: 'acme/plugin',
+    });
   });
 
   it('startSession validates schema, dispatches to session orchestrator, and forwards events', async () => {
@@ -149,6 +170,26 @@ describe('runtime-router', () => {
     });
   });
 
+  it('plugin package handlers dispatch to plugin catalog service', async () => {
+    await registerHandlersForTest();
+
+    await callHandler(RUNTIME_CHANNELS.listPluginPackages, {});
+    await callHandler(RUNTIME_CHANNELS.validatePluginPackage, { packageName: 'acme/plugin' });
+    await callHandler(RUNTIME_CHANNELS.importPluginPackage, { packageName: 'acme/plugin' });
+    await callHandler(RUNTIME_CHANNELS.uninstallPluginPackage, { pluginId: 'acme/plugin' });
+
+    expect(mockPluginCatalogService.listPluginPackages).toHaveBeenCalled();
+    expect(mockPluginCatalogService.validatePluginPackage).toHaveBeenCalledWith({
+      packageName: 'acme/plugin',
+    });
+    expect(mockPluginCatalogService.importPluginPackage).toHaveBeenCalledWith({
+      packageName: 'acme/plugin',
+    });
+    expect(mockPluginCatalogService.uninstallPluginPackage).toHaveBeenCalledWith({
+      pluginId: 'acme/plugin',
+    });
+  });
+
   it('invalid request payloads throw zod validation errors', async () => {
     await registerHandlersForTest();
 
@@ -161,5 +202,14 @@ describe('runtime-router', () => {
       })
     ).rejects.toThrow();
     await expect(callHandler(RUNTIME_CHANNELS.getHistory, { status: 'unknown' })).rejects.toThrow();
+    await expect(
+      callHandler(RUNTIME_CHANNELS.validatePluginPackage, { packageName: '' })
+    ).rejects.toThrow();
+    await expect(
+      callHandler(RUNTIME_CHANNELS.importPluginPackage, { packageName: '' })
+    ).rejects.toThrow();
+    await expect(
+      callHandler(RUNTIME_CHANNELS.uninstallPluginPackage, { pluginId: '' })
+    ).rejects.toThrow();
   });
 });

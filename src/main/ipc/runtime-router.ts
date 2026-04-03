@@ -9,6 +9,10 @@ import {
   cancelPluginSchema,
   getPluginRunsSchema,
   getHistorySchema,
+  listPluginPackagesSchema,
+  validatePluginPackageSchema,
+  importPluginPackageSchema,
+  uninstallPluginPackageSchema,
 } from '../../shared/ipc/runtime-channels';
 import type {
   StartSessionRequest,
@@ -27,10 +31,18 @@ import type {
   GetHistoryResponse,
   SessionEvent,
   PluginEvent,
+  ListPluginPackagesResponse,
+  ValidatePluginPackageRequest,
+  ValidatePluginPackageResponse,
+  ImportPluginPackageRequest,
+  ImportPluginPackageResponse,
+  UninstallPluginPackageRequest,
+  UninstallPluginPackageResponse,
 } from '../../shared/runtime/runtime-contracts';
 import * as sessionOrchestrator from '../runtime/session-orchestrator';
 import * as pluginRunner from '../runtime/plugin-runner';
 import * as historyService from '../runtime/runtime-history-service';
+import * as pluginCatalogService from '../runtime/plugin-catalog-service';
 
 let mainWindow: BrowserWindow | null = null;
 
@@ -152,6 +164,38 @@ export function registerRuntimeHandlers(ipc: typeof ipcMain): void {
     async (_event: IpcMainInvokeEvent, request: unknown): Promise<GetPluginRunsResponse> => {
       const validatedRequest = getPluginRunsSchema.parse(request) as GetPluginRunsRequest;
       return pluginRunner.getPluginRuns(validatedRequest);
+    }
+  );
+
+  ipc.handle(
+    RUNTIME_CHANNELS.listPluginPackages,
+    async (_event: IpcMainInvokeEvent, request: unknown): Promise<ListPluginPackagesResponse> => {
+      listPluginPackagesSchema.parse(request);
+      return pluginCatalogService.listPluginPackages();
+    }
+  );
+
+  ipc.handle(
+    RUNTIME_CHANNELS.validatePluginPackage,
+    async (_event: IpcMainInvokeEvent, request: unknown): Promise<ValidatePluginPackageResponse> => {
+      const validatedRequest = validatePluginPackageSchema.parse(request) as ValidatePluginPackageRequest;
+      return pluginCatalogService.validatePluginPackage(validatedRequest);
+    }
+  );
+
+  ipc.handle(
+    RUNTIME_CHANNELS.importPluginPackage,
+    async (_event: IpcMainInvokeEvent, request: unknown): Promise<ImportPluginPackageResponse> => {
+      const validatedRequest = importPluginPackageSchema.parse(request) as ImportPluginPackageRequest;
+      return pluginCatalogService.importPluginPackage(validatedRequest);
+    }
+  );
+
+  ipc.handle(
+    RUNTIME_CHANNELS.uninstallPluginPackage,
+    async (_event: IpcMainInvokeEvent, request: unknown): Promise<UninstallPluginPackageResponse> => {
+      const validatedRequest = uninstallPluginPackageSchema.parse(request) as UninstallPluginPackageRequest;
+      return pluginCatalogService.uninstallPluginPackage(validatedRequest);
     }
   );
 

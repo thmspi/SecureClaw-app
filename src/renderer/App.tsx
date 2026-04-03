@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import ManagementPage from '@/pages/management/ManagementPage';
 import { WizardPage } from '@/pages/wizard/WizardPage';
+import { useWizardStore } from '@/stores/wizard-store';
 
 interface RouteProps {
   path: string;
@@ -21,6 +22,8 @@ function Route({ path, currentPath, children }: RouteProps) {
 
 export default function App() {
   const [currentPath, setCurrentPath] = useState(() => normalizePath(window.location.pathname));
+  const installStatus = useWizardStore((state) => state.install.status);
+  const currentStep = useWizardStore((state) => state.currentStep);
 
   useEffect(() => {
     const onPathChange = () => {
@@ -35,6 +38,16 @@ export default function App() {
       window.removeEventListener('secureclaw:navigate', onPathChange as EventListener);
     };
   }, []);
+
+  useEffect(() => {
+    const shouldOpenManagement = installStatus === 'completed' || currentStep === 'complete';
+    if (!shouldOpenManagement || currentPath === '/management') {
+      return;
+    }
+
+    window.history.pushState({}, '', '/management');
+    setCurrentPath('/management');
+  }, [installStatus, currentStep, currentPath]);
 
   const path = currentPath === '/management' ? '/management' : '/';
 
