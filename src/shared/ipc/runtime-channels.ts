@@ -44,7 +44,7 @@ export const runPluginSchema = z.object({
   runId: z.string().min(1),
   pluginName: z.string().min(1),
   sessionId: z.string().min(1),
-  args: z.record(z.unknown()).optional(),
+  args: z.record(z.string(), z.unknown()).optional(),
 });
 
 export const cancelPluginSchema = z.object({
