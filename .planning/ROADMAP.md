@@ -63,7 +63,7 @@ Plans:
 Plans:
 - [x] 03-01-PLAN.md — Session lifecycle foundation with state machine and runtime history persistence
 - [x] 03-02-PLAN.md — Plugin execution engine with capped concurrency queue
-- [ ] 03-03-PLAN.md — Runtime IPC routing and Management store integration
+- [x] 03-03-PLAN.md — Runtime IPC routing and Management store integration
 - [ ] 03-04-PLAN.md — Management page UI with session control, plugin runs, and history
 **UI hint**: yes
 
@@ -89,5 +89,5 @@ Phases execute in numeric order: 1 -> 1.1 -> 2 -> 2.1 -> 3 -> 3.1 -> 4
 |-------|----------------|--------|-----------|
 | 1. Platform Core and Safety Boundaries | 0/3 | Not started | - |
 | 2. Guided Setup and Install Flows | 0/TBD | Not started | - |
-| 3. Managed Session and Plugin Runtime | 0/TBD | Not started | - |
+| 3. Managed Session and Plugin Runtime | 2/4 | In Progress | - |
 | 4. Diagnostics, Security Storage, and macOS Distribution Baseline | 0/TBD | Not started | - |
