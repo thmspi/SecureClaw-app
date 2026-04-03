@@ -24,10 +24,10 @@ Requirements for initial macOS release with Windows compatibility built into arc
 
 ### Session and Runtime
 
-- [ ] **RUN-01**: User can start a managed session from the app.
-- [ ] **RUN-02**: User can stop an active managed session from the app.
-- [ ] **RUN-03**: Plugin execution can be triggered and monitored from the app.
-- [ ] **RUN-04**: Runtime operations are persisted in a local operation history for troubleshooting.
+- [x] **RUN-01**: User can start a managed session from the app.
+- [x] **RUN-02**: User can stop an active managed session from the app.
+- [x] **RUN-03**: Plugin execution can be triggered and monitored from the app.
+- [x] **RUN-04**: Runtime operations are persisted in a local operation history for troubleshooting.
 
 ### User Clarity and Diagnostics
 
@@ -82,10 +82,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SETUP-03 | Phase 2 | Pending |
 | SETUP-04 | Phase 2 | Pending |
 | SETUP-05 | Phase 2 | Pending |
-| RUN-01 | Phase 3 | Pending |
-| RUN-02 | Phase 3 | Pending |
-| RUN-03 | Phase 3 | Pending |
-| RUN-04 | Phase 3 | Pending |
+| RUN-01 | Phase 3 | Complete |
+| RUN-02 | Phase 3 | Complete |
+| RUN-03 | Phase 3 | Complete |
+| RUN-04 | Phase 3 | Complete |
 | DIAG-01 | Phase 4 | Pending |
 | DIAG-02 | Phase 4 | Pending |
 | DIAG-03 | Phase 4 | Pending |
