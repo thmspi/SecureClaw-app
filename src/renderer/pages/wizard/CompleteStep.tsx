@@ -7,6 +7,10 @@ export function CompleteStep() {
   const reset = useWizardStore((s) => s.reset);
 
   const targetName = selectedTarget === 'openclaw' ? 'OpenClaw' : 'NemoClaw';
+  const openDashboard = () => {
+    window.history.pushState({}, '', '/management');
+    window.dispatchEvent(new Event('secureclaw:navigate'));
+  };
 
   return (
     <div className="p-6 space-y-6">
@@ -24,7 +28,7 @@ export function CompleteStep() {
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3 justify-center">
-        <Button size="lg" className="min-h-11">
+        <Button size="lg" className="min-h-11" onClick={openDashboard}>
           Open Dashboard
           <ExternalLink className="size-4 ml-1" />
         </Button>
