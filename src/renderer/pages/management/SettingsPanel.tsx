@@ -1,8 +1,6 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Badge } from '@/components/ui/badge';
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { useManagementStore } from '@/stores/management-store';
 
 const THEME_STORAGE_KEY = 'secureclaw-theme';
 
@@ -23,11 +21,10 @@ function readTheme(): boolean {
 }
 
 export default function SettingsPanel() {
-  const { pluginPackages, pluginMutationInFlight, uninstallPluginPackage, loadPluginPackages } =
-    useManagementStore();
-
   const [darkMode, setDarkMode] = useState(false);
-  const [uninstallError, setUninstallError] = useState<string | null>(null);
+  const [stackUninstalling, setStackUninstalling] = useState(false);
+  const [stackUninstallError, setStackUninstallError] = useState<string | null>(null);
+  const [stackUninstallResult, setStackUninstallResult] = useState<string | null>(null);
 
   useEffect(() => {
     const initial = readTheme();
@@ -35,23 +32,41 @@ export default function SettingsPanel() {
     applyTheme(initial);
   }, []);
 
-  const installedPlugins = useMemo(() => pluginPackages, [pluginPackages]);
-
   const handleThemeToggle = () => {
     const next = !darkMode;
     setDarkMode(next);
     applyTheme(next);
   };
 
-  const handleUninstall = async (pluginId: string) => {
-    setUninstallError(null);
-    const result = await uninstallPluginPackage(pluginId);
-    if (!result.uninstalled) {
-      setUninstallError(result.error ?? `Failed to uninstall ${pluginId}`);
+  const handleStackUninstall = async () => {
+    const confirmed = window.confirm(
+      'This will uninstall OpenClaw and NemoClaw binaries from this machine. Continue?'
+    );
+    if (!confirmed) {
       return;
     }
 
-    await loadPluginPackages();
+    setStackUninstalling(true);
+    setStackUninstallError(null);
+    setStackUninstallResult(null);
+
+    try {
+      const result = await window.secureClaw.install.uninstallStack();
+      if (result.errors && result.errors.length > 0) {
+        setStackUninstallError(result.errors.join('\n'));
+      }
+
+      if (result.removed.length === 0) {
+        setStackUninstallResult('No OpenClaw/NemoClaw binaries were removed.');
+        return;
+      }
+
+      setStackUninstallResult(`Removed: ${result.removed.join(', ')}`);
+    } catch (error) {
+      setStackUninstallError(error instanceof Error ? error.message : String(error));
+    } finally {
+      setStackUninstalling(false);
+    }
   };
 
   return (
@@ -65,38 +80,15 @@ export default function SettingsPanel() {
       </section>
 
       <section className="space-y-3 rounded-lg border p-4">
-        <div className="flex items-center justify-between">
-          <h3 className="text-base font-semibold">Uninstall Packages</h3>
-          <Badge variant="secondary">{installedPlugins.length} installed</Badge>
-        </div>
-
-        {uninstallError && <p className="text-sm text-destructive">{uninstallError}</p>}
-
-        {installedPlugins.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No plugin packages are currently installed.</p>
-        ) : (
-          <ul className="space-y-2">
-            {installedPlugins.map((plugin) => (
-              <li
-                key={plugin.id}
-                className="flex flex-wrap items-center justify-between gap-3 rounded-md border p-3"
-              >
-                <div>
-                  <p className="font-medium">{plugin.displayName}</p>
-                  <p className="text-xs text-muted-foreground">{plugin.id}</p>
-                </div>
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  disabled={pluginMutationInFlight}
-                  onClick={() => void handleUninstall(plugin.id)}
-                >
-                  Uninstall
-                </Button>
-              </li>
-            ))}
-          </ul>
-        )}
+        <h3 className="text-base font-semibold">Uninstall Stack</h3>
+        <p className="text-sm text-muted-foreground">
+          Remove OpenClaw and NemoClaw binaries from this machine.
+        </p>
+        <Button variant="destructive" disabled={stackUninstalling} onClick={() => void handleStackUninstall()}>
+          {stackUninstalling ? 'Uninstalling...' : 'Uninstall OpenClaw + NemoClaw'}
+        </Button>
+        {stackUninstallError && <p className="whitespace-pre-wrap text-sm text-destructive">{stackUninstallError}</p>}
+        {stackUninstallResult && <p className="text-sm text-muted-foreground">{stackUninstallResult}</p>}
       </section>
     </div>
   );

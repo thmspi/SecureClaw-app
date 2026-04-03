@@ -153,7 +153,11 @@ Then restart Electron.`
     });
   }
 
-  private async cleanupInstalledBinariesOnCancel(removed: string[]): Promise<void> {
+  private async cleanupInstalledBinaries(options: {
+    removed: string[];
+    errors?: string[];
+    reason: 'cancel' | 'manual-uninstall';
+  }): Promise<void> {
     if (process.env.NODE_ENV === 'test') {
       return;
     }
@@ -175,10 +179,12 @@ Then restart Electron.`
         60000
       );
       if (openclawCleanup === 'openclaw') {
-        removed.push('openclaw');
+        options.removed.push('openclaw');
       }
     } catch (error) {
-      console.warn('OpenClaw uninstall on cancel failed:', error);
+      const message = error instanceof Error ? error.message : String(error);
+      options.errors?.push(`OpenClaw uninstall failed: ${message}`);
+      console.warn(`OpenClaw uninstall on ${options.reason} failed:`, error);
     }
 
     try {
@@ -196,10 +202,12 @@ Then restart Electron.`
         90000
       );
       if (nemoclawCleanup === 'nemoclaw') {
-        removed.push('nemoclaw');
+        options.removed.push('nemoclaw');
       }
     } catch (error) {
-      console.warn('NemoClaw uninstall on cancel failed:', error);
+      const message = error instanceof Error ? error.message : String(error);
+      options.errors?.push(`NemoClaw uninstall failed: ${message}`);
+      console.warn(`NemoClaw uninstall on ${options.reason} failed:`, error);
     }
   }
 
@@ -325,7 +333,10 @@ Then restart Electron.`
     const removed = await rollbackService.rollback();
 
     // Run potentially long external uninstall operations in background so cancel returns quickly.
-    void this.cleanupInstalledBinariesOnCancel(removed);
+    void this.cleanupInstalledBinaries({
+      removed,
+      reason: 'cancel',
+    });
 
     this.saveStateSafe({
       target: this.target ?? 'openclaw',
@@ -338,6 +349,21 @@ Then restart Electron.`
 
     this.clearStateSafe();
     return { removed };
+  }
+
+  /**
+   * Uninstall OpenClaw/NemoClaw stack binaries from Settings
+   */
+  async uninstallStack(): Promise<{ removed: string[]; errors?: string[] }> {
+    const removed: string[] = [];
+    const errors: string[] = [];
+    await this.cleanupInstalledBinaries({
+      removed,
+      errors,
+      reason: 'manual-uninstall',
+    });
+
+    return errors.length > 0 ? { removed, errors } : { removed };
   }
 
   /**

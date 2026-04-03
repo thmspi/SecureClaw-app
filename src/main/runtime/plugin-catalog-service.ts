@@ -4,6 +4,8 @@ import type {
   ImportPluginPackageResponse,
   ListPluginPackagesResponse,
   PluginPackage,
+  SetPluginPackageEnabledRequest,
+  SetPluginPackageEnabledResponse,
   UninstallPluginPackageRequest,
   UninstallPluginPackageResponse,
   ValidatePluginPackageRequest,
@@ -75,12 +77,67 @@ function normalizePlugin(input: Partial<PluginPackage> & { id: string }): Plugin
     version: input.version,
     enabled: input.enabled ?? true,
     description: input.description,
+    category: input.category ?? 'Other',
     source: input.source ?? 'unknown',
+    origin: input.origin,
+    removable: input.removable ?? true,
   };
 }
 
+function hasNonEmptyArray(value: Record<string, unknown>, key: string): boolean {
+  return Array.isArray(value[key]) && (value[key] as unknown[]).length > 0;
+}
+
+function derivePluginCategory(value: Record<string, unknown>, id: string): NonNullable<PluginPackage['category']> {
+  if (/^memory[-_]/i.test(id)) {
+    return 'Memory';
+  }
+  if (hasNonEmptyArray(value, 'channelIds')) {
+    return 'Channel';
+  }
+  if (hasNonEmptyArray(value, 'providerIds')) {
+    return 'Model Provider';
+  }
+  if (hasNonEmptyArray(value, 'speechProviderIds')) {
+    return 'Speech';
+  }
+  if (hasNonEmptyArray(value, 'mediaUnderstandingProviderIds')) {
+    return 'Media Understanding';
+  }
+  if (hasNonEmptyArray(value, 'imageGenerationProviderIds')) {
+    return 'Image Generation';
+  }
+  if (hasNonEmptyArray(value, 'webSearchProviderIds')) {
+    return 'Web Search';
+  }
+  if (hasNonEmptyArray(value, 'toolNames')) {
+    return 'Tool';
+  }
+  if (hasNonEmptyArray(value, 'cliCommands') || hasNonEmptyArray(value, 'commands')) {
+    return 'Command';
+  }
+  if (hasNonEmptyArray(value, 'hookNames') || (typeof value.hookCount === 'number' && value.hookCount > 0)) {
+    return 'Hook';
+  }
+  if (hasNonEmptyArray(value, 'services')) {
+    return 'Service';
+  }
+
+  return 'Other';
+}
+
+function combineCliOutput(result: CliResult): string {
+  return `${result.error ?? ''}\n${result.stderr}\n${result.stdout}`.trim();
+}
+
+function supportsYesFlag(result: CliResult): boolean {
+  return !/unknown option\s+['"]?--yes['"]?|unexpected argument\s+['"]?--yes['"]?/i.test(
+    combineCliOutput(result)
+  );
+}
+
 function toUserError(result: CliResult, fallback: string): string {
-  const combined = `${result.error ?? ''}\n${result.stderr}`.trim();
+  const combined = combineCliOutput(result);
   if (!combined) {
     return fallback;
   }
@@ -112,15 +169,26 @@ function parsePluginsJson(raw: string): PluginPackage[] {
         return null;
       }
 
+      const origin = typeof value.origin === 'string' ? value.origin : undefined;
+      const normalizedSource =
+        typeof value.source === 'string' && (value.source === 'local' || value.source === 'registry')
+          ? value.source
+          : origin && /bundled|marketplace|clawhub|npm|registry/i.test(origin)
+            ? 'registry'
+            : origin && /local|path|linked/i.test(origin)
+              ? 'local'
+              : 'unknown';
+
       return normalizePlugin({
         id,
         displayName: (value.displayName as string) ?? (value.name as string) ?? id,
         version: typeof value.version === 'string' ? value.version : undefined,
         enabled: Boolean(value.enabled ?? true),
         description: typeof value.description === 'string' ? value.description : undefined,
-        source: typeof value.source === 'string' && (value.source === 'local' || value.source === 'registry')
-          ? value.source
-          : 'unknown',
+        category: derivePluginCategory(value, id),
+        source: normalizedSource,
+        origin,
+        removable: origin !== 'bundled',
       });
     })
     .filter((plugin): plugin is PluginPackage => Boolean(plugin));
@@ -157,7 +225,9 @@ function parsePluginsTable(raw: string): PluginPackage[] {
         id,
         version,
         enabled: statusCell ? enabled : true,
+        category: 'Other',
         source: 'unknown',
+        removable: true,
       });
     })
     .filter((plugin): plugin is PluginPackage => Boolean(plugin));
@@ -176,13 +246,19 @@ function parseSinglePlugin(raw: string, packageName: string): PluginPackage {
     version: typeof parsed.version === 'string' ? parsed.version : undefined,
     enabled: typeof parsed.enabled === 'boolean' ? parsed.enabled : true,
     description: typeof parsed.description === 'string' ? parsed.description : undefined,
-    source: 'unknown',
+    category: derivePluginCategory(parsed, id),
+    source:
+      typeof parsed.source === 'string' && (parsed.source === 'local' || parsed.source === 'registry')
+        ? parsed.source
+        : 'unknown',
+    origin: typeof parsed.origin === 'string' ? parsed.origin : undefined,
+    removable: parsed.origin !== 'bundled',
   });
 }
 
 async function installWithFallback(packageName: string): Promise<CliResult> {
   const first = await runOpenClaw(['plugins', 'install', packageName, '--yes']);
-  if (first.ok || !/unknown option|unexpected argument/i.test(first.stderr)) {
+  if (first.ok || supportsYesFlag(first)) {
     return first;
   }
   return runOpenClaw(['plugins', 'install', packageName]);
@@ -190,7 +266,7 @@ async function installWithFallback(packageName: string): Promise<CliResult> {
 
 async function uninstallWithFallback(pluginId: string): Promise<CliResult> {
   const first = await runOpenClaw(['plugins', 'uninstall', pluginId, '--yes']);
-  if (first.ok || !/unknown option|unexpected argument/i.test(first.stderr)) {
+  if (first.ok || supportsYesFlag(first)) {
     return first;
   }
   return runOpenClaw(['plugins', 'uninstall', pluginId]);
@@ -276,6 +352,9 @@ export async function importPluginPackage(
     };
   }
 
+  const beforeInstall = await listPluginPackages();
+  const beforeInstallIds = new Set(beforeInstall.packages.map((entry) => entry.id.toLowerCase()));
+
   const installResult = await installWithFallback(packageName);
   if (!installResult.ok) {
     return {
@@ -286,8 +365,11 @@ export async function importPluginPackage(
   }
 
   const listed = await listPluginPackages();
+  const expectedId = validateResult.plugin?.id.toLowerCase();
+  const addedPlugin = listed.packages.find((entry) => !beforeInstallIds.has(entry.id.toLowerCase()));
   const plugin = listed.packages.find(
     (entry) =>
+      (expectedId ? entry.id.toLowerCase() === expectedId : false) ||
       entry.id.toLowerCase() === packageName.toLowerCase() ||
       entry.displayName.toLowerCase() === packageName.toLowerCase()
   );
@@ -295,7 +377,7 @@ export async function importPluginPackage(
   return {
     imported: true,
     packageName,
-    plugin: plugin ?? normalizePlugin({ id: packageName, source: 'unknown' }),
+    plugin: addedPlugin ?? plugin ?? validateResult.plugin ?? normalizePlugin({ id: packageName, source: 'unknown' }),
   };
 }
 
@@ -323,5 +405,39 @@ export async function uninstallPluginPackage(
   return {
     uninstalled: true,
     pluginId,
+  };
+}
+
+export async function setPluginPackageEnabled(
+  request: SetPluginPackageEnabledRequest
+): Promise<SetPluginPackageEnabledResponse> {
+  const pluginId = request.pluginId.trim();
+  if (!pluginId) {
+    return {
+      updated: false,
+      pluginId,
+      enabled: request.enabled,
+      error: 'Plugin ID is required.',
+    };
+  }
+
+  const operation = request.enabled ? 'enable' : 'disable';
+  const result = await runOpenClaw(['plugins', operation, pluginId]);
+  if (!result.ok) {
+    return {
+      updated: false,
+      pluginId,
+      enabled: request.enabled,
+      error: toUserError(result, `Failed to ${operation} plugin "${pluginId}"`),
+    };
+  }
+
+  const listed = await listPluginPackages();
+  const plugin = listed.packages.find((entry) => entry.id.toLowerCase() === pluginId.toLowerCase());
+
+  return {
+    updated: true,
+    pluginId,
+    enabled: plugin?.enabled ?? request.enabled,
   };
 }

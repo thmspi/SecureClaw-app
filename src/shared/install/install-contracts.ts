@@ -26,6 +26,11 @@ export interface StartDockerDaemonResult {
   message: string;
 }
 
+export interface UninstallStackResult {
+  removed: string[];
+  errors?: string[];
+}
+
 export interface InstallProgress {
   correlationId: string;
   step: number;

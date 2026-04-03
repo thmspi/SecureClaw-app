@@ -152,7 +152,22 @@ export interface PluginPackage {
   version?: string;
   enabled: boolean;
   description?: string;
+  category?:
+    | 'Channel'
+    | 'Model Provider'
+    | 'Memory'
+    | 'Speech'
+    | 'Media Understanding'
+    | 'Image Generation'
+    | 'Web Search'
+    | 'Tool'
+    | 'Command'
+    | 'Hook'
+    | 'Service'
+    | 'Other';
   source: 'local' | 'registry' | 'unknown';
+  origin?: string;
+  removable?: boolean;
 }
 
 export interface ListPluginPackagesResponse {
@@ -189,5 +204,17 @@ export interface UninstallPluginPackageRequest {
 export interface UninstallPluginPackageResponse {
   uninstalled: boolean;
   pluginId: string;
+  error?: string;
+}
+
+export interface SetPluginPackageEnabledRequest {
+  pluginId: string;
+  enabled: boolean;
+}
+
+export interface SetPluginPackageEnabledResponse {
+  updated: boolean;
+  pluginId: string;
+  enabled: boolean;
   error?: string;
 }

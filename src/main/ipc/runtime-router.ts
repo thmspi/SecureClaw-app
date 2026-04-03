@@ -12,6 +12,7 @@ import {
   listPluginPackagesSchema,
   validatePluginPackageSchema,
   importPluginPackageSchema,
+  setPluginPackageEnabledSchema,
   uninstallPluginPackageSchema,
 } from '../../shared/ipc/runtime-channels';
 import type {
@@ -36,6 +37,8 @@ import type {
   ValidatePluginPackageResponse,
   ImportPluginPackageRequest,
   ImportPluginPackageResponse,
+  SetPluginPackageEnabledRequest,
+  SetPluginPackageEnabledResponse,
   UninstallPluginPackageRequest,
   UninstallPluginPackageResponse,
 } from '../../shared/runtime/runtime-contracts';
@@ -196,6 +199,14 @@ export function registerRuntimeHandlers(ipc: typeof ipcMain): void {
     async (_event: IpcMainInvokeEvent, request: unknown): Promise<UninstallPluginPackageResponse> => {
       const validatedRequest = uninstallPluginPackageSchema.parse(request) as UninstallPluginPackageRequest;
       return pluginCatalogService.uninstallPluginPackage(validatedRequest);
+    }
+  );
+
+  ipc.handle(
+    RUNTIME_CHANNELS.setPluginPackageEnabled,
+    async (_event: IpcMainInvokeEvent, request: unknown): Promise<SetPluginPackageEnabledResponse> => {
+      const validatedRequest = setPluginPackageEnabledSchema.parse(request) as SetPluginPackageEnabledRequest;
+      return pluginCatalogService.setPluginPackageEnabled(validatedRequest);
     }
   );
 

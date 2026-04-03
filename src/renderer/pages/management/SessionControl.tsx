@@ -70,7 +70,7 @@ export default function SessionControl() {
             </p>
           ) : (
             <p className="text-sm text-muted-foreground">
-              Start a session to launch with your selected plugin packages
+              Start a session to bring the OpenClaw runtime online.
             </p>
           )}
         </div>

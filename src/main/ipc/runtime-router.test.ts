@@ -26,6 +26,7 @@ const mockPluginCatalogService = {
   validatePluginPackage: jest.fn(),
   importPluginPackage: jest.fn(),
   uninstallPluginPackage: jest.fn(),
+  setPluginPackageEnabled: jest.fn(),
 };
 
 jest.mock('../runtime/session-orchestrator', () => mockSessionOrchestrator);
@@ -84,6 +85,11 @@ describe('runtime-router', () => {
     mockPluginCatalogService.uninstallPluginPackage.mockResolvedValue({
       uninstalled: true,
       pluginId: 'acme/plugin',
+    });
+    mockPluginCatalogService.setPluginPackageEnabled.mockResolvedValue({
+      updated: true,
+      pluginId: 'acme/plugin',
+      enabled: false,
     });
   });
 
@@ -177,6 +183,10 @@ describe('runtime-router', () => {
     await callHandler(RUNTIME_CHANNELS.validatePluginPackage, { packageName: 'acme/plugin' });
     await callHandler(RUNTIME_CHANNELS.importPluginPackage, { packageName: 'acme/plugin' });
     await callHandler(RUNTIME_CHANNELS.uninstallPluginPackage, { pluginId: 'acme/plugin' });
+    await callHandler(RUNTIME_CHANNELS.setPluginPackageEnabled, {
+      pluginId: 'acme/plugin',
+      enabled: false,
+    });
 
     expect(mockPluginCatalogService.listPluginPackages).toHaveBeenCalled();
     expect(mockPluginCatalogService.validatePluginPackage).toHaveBeenCalledWith({
@@ -187,6 +197,10 @@ describe('runtime-router', () => {
     });
     expect(mockPluginCatalogService.uninstallPluginPackage).toHaveBeenCalledWith({
       pluginId: 'acme/plugin',
+    });
+    expect(mockPluginCatalogService.setPluginPackageEnabled).toHaveBeenCalledWith({
+      pluginId: 'acme/plugin',
+      enabled: false,
     });
   });
 
@@ -210,6 +224,9 @@ describe('runtime-router', () => {
     ).rejects.toThrow();
     await expect(
       callHandler(RUNTIME_CHANNELS.uninstallPluginPackage, { pluginId: '' })
+    ).rejects.toThrow();
+    await expect(
+      callHandler(RUNTIME_CHANNELS.setPluginPackageEnabled, { pluginId: '', enabled: true })
     ).rejects.toThrow();
   });
 });

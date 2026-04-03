@@ -34,6 +34,10 @@ interface ManagementState {
   validatePluginPackage: (packageName: string) => Promise<ValidatePluginPackageResponse>;
   importPluginPackage: (packageName: string) => Promise<ImportPluginPackageResponse>;
   uninstallPluginPackage: (pluginId: string) => Promise<{ uninstalled: boolean; error?: string }>;
+  setPluginPackageEnabled: (
+    pluginId: string,
+    enabled: boolean
+  ) => Promise<{ updated: boolean; enabled: boolean; error?: string }>;
   clearPluginError: () => void;
 }
 
@@ -224,6 +228,24 @@ export const useManagementStore = create<ManagementState>()(
           }));
 
           return { uninstalled: true };
+        } finally {
+          set({ pluginMutationInFlight: false });
+        }
+      },
+
+      setPluginPackageEnabled: async (pluginId, enabled) => {
+        set({ pluginMutationInFlight: true, pluginError: undefined });
+        try {
+          const response = await window.secureClaw.runtime.setPluginPackageEnabled({ pluginId, enabled });
+          if (!response.updated) {
+            const message =
+              response.error ?? `Failed to ${enabled ? 'enable' : 'disable'} ${pluginId}`;
+            set({ pluginError: message });
+            return { updated: false, enabled, error: message };
+          }
+
+          await get().loadPluginPackages();
+          return { updated: true, enabled: response.enabled };
         } finally {
           set({ pluginMutationInFlight: false });
         }

@@ -16,6 +16,7 @@ import type {
   InstallState,
   PrerequisiteResult,
   StartDockerDaemonResult,
+  UninstallStackResult,
 } from '../shared/install/install-contracts';
 import type {
   StartSessionRequest,
@@ -38,6 +39,8 @@ import type {
   ValidatePluginPackageResponse,
   ImportPluginPackageRequest,
   ImportPluginPackageResponse,
+  SetPluginPackageEnabledRequest,
+  SetPluginPackageEnabledResponse,
   UninstallPluginPackageRequest,
   UninstallPluginPackageResponse,
 } from '../shared/runtime/runtime-contracts';
@@ -78,6 +81,9 @@ const installAPI = {
 
   startDockerDaemon: (): Promise<StartDockerDaemonResult> =>
     ipcRenderer.invoke(INSTALL_CHANNELS.startDockerDaemon),
+
+  uninstallStack: (): Promise<UninstallStackResult> =>
+    ipcRenderer.invoke(INSTALL_CHANNELS.uninstallStack),
 
   // Event subscriptions - return unsubscribe function
   onProgress: (callback: (progress: InstallProgress) => void) => {
@@ -134,6 +140,11 @@ const runtimeAPI = {
     request: UninstallPluginPackageRequest
   ): Promise<UninstallPluginPackageResponse> =>
     ipcRenderer.invoke(RUNTIME_CHANNELS.uninstallPluginPackage, request),
+
+  setPluginPackageEnabled: (
+    request: SetPluginPackageEnabledRequest
+  ): Promise<SetPluginPackageEnabledResponse> =>
+    ipcRenderer.invoke(RUNTIME_CHANNELS.setPluginPackageEnabled, request),
 
   getHistory: (request: GetHistoryRequest): Promise<GetHistoryResponse> =>
     ipcRenderer.invoke(RUNTIME_CHANNELS.getHistory, request),

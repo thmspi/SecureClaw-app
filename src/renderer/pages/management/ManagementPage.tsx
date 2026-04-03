@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   LayoutDashboard,
   Menu,
@@ -6,7 +6,6 @@ import {
   SlidersHorizontal,
   X,
 } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
@@ -28,15 +27,10 @@ const NAV_ITEMS: Array<{
 ];
 
 export default function ManagementPage() {
-  const { loadSessions, loadPluginPackages, pluginPackages, selectedPluginIds } = useManagementStore();
+  const { loadSessions, loadPluginPackages } = useManagementStore();
 
   const [menuOpen, setMenuOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<ManagementTab>('management');
-
-  const selectedPlugins = useMemo(
-    () => pluginPackages.filter((plugin) => selectedPluginIds.includes(plugin.id)),
-    [pluginPackages, selectedPluginIds]
-  );
 
   useEffect(() => {
     void loadSessions();
@@ -61,7 +55,7 @@ export default function ManagementPage() {
             <CardTitle>Configuration</CardTitle>
           </CardHeader>
           <CardContent>
-            <PluginCatalog />
+            <p className="text-sm text-muted-foreground">No additional configuration is available yet.</p>
           </CardContent>
         </Card>
       );
@@ -93,22 +87,10 @@ export default function ManagementPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Plugins Selected For New Sessions</CardTitle>
+            <CardTitle>Plugins</CardTitle>
           </CardHeader>
           <CardContent>
-            {selectedPlugins.length === 0 ? (
-              <p className="text-sm text-muted-foreground">
-                No plugins selected yet. Open Configuration to choose or import plugin packages.
-              </p>
-            ) : (
-              <div className="flex flex-wrap gap-2">
-                {selectedPlugins.map((plugin) => (
-                  <Badge key={plugin.id} variant="secondary">
-                    {plugin.displayName}
-                  </Badge>
-                ))}
-              </div>
-            )}
+            <PluginCatalog />
           </CardContent>
         </Card>
       </div>

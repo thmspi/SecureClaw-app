@@ -12,6 +12,7 @@ export const RUNTIME_CHANNELS = {
   validatePluginPackage: 'runtime:v1:validatePluginPackage',
   importPluginPackage: 'runtime:v1:importPluginPackage',
   uninstallPluginPackage: 'runtime:v1:uninstallPluginPackage',
+  setPluginPackageEnabled: 'runtime:v1:setPluginPackageEnabled',
 
   getHistory: 'runtime:v1:getHistory',
 
@@ -73,6 +74,11 @@ export const uninstallPluginPackageSchema = z.object({
   pluginId: z.string().min(1),
 });
 
+export const setPluginPackageEnabledSchema = z.object({
+  pluginId: z.string().min(1),
+  enabled: z.boolean(),
+});
+
 export type StartSessionInput = z.infer<typeof startSessionSchema>;
 export type StopSessionInput = z.infer<typeof stopSessionSchema>;
 export type GetSessionsInput = z.infer<typeof getSessionsSchema>;
@@ -84,3 +90,4 @@ export type ListPluginPackagesInput = z.infer<typeof listPluginPackagesSchema>;
 export type ValidatePluginPackageInput = z.infer<typeof validatePluginPackageSchema>;
 export type ImportPluginPackageInput = z.infer<typeof importPluginPackageSchema>;
 export type UninstallPluginPackageInput = z.infer<typeof uninstallPluginPackageSchema>;
+export type SetPluginPackageEnabledInput = z.infer<typeof setPluginPackageEnabledSchema>;
