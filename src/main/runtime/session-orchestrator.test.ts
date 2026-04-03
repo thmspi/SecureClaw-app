@@ -1,4 +1,5 @@
 import { runProcess, stopProcess } from './process-runner';
+import { saveHistoryRecord } from './runtime-history-service';
 import {
   startSession,
   stopSession as stopManagedSession,
@@ -11,8 +12,13 @@ jest.mock('./process-runner', () => ({
   stopProcess: jest.fn(),
 }));
 
+jest.mock('./runtime-history-service', () => ({
+  saveHistoryRecord: jest.fn(),
+}));
+
 const runProcessMock = runProcess as jest.MockedFunction<typeof runProcess>;
 const stopProcessMock = stopProcess as jest.MockedFunction<typeof stopProcess>;
+const saveHistoryRecordMock = saveHistoryRecord as jest.MockedFunction<typeof saveHistoryRecord>;
 const fetchMock = jest.fn();
 
 describe('SessionOrchestrator', () => {
@@ -60,6 +66,13 @@ describe('SessionOrchestrator', () => {
     });
     expect(sessions[0]?.startedAt).toBeDefined();
     expect(sessions[0]?.activeAt).toBeDefined();
+    expect(saveHistoryRecordMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        operationType: 'session_start',
+        status: 'success',
+        targetName: 'session-1',
+      })
+    );
   });
 
   it('startSession transitions Idle -> Starting -> Stopped with error when readiness times out', async () => {
@@ -88,6 +101,13 @@ describe('SessionOrchestrator', () => {
     const session = getSessions().find((entry) => entry.sessionId === 'session-timeout');
     expect(session?.state).toBe('Stopped');
     expect(session?.error).toContain('Readiness timeout');
+    expect(saveHistoryRecordMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        operationType: 'session_start',
+        status: 'failed',
+        targetName: 'session-timeout',
+      })
+    );
   });
 
   it('stopSession transitions Active -> Stopping -> Stopped with graceful strategy', async () => {
@@ -118,6 +138,13 @@ describe('SessionOrchestrator', () => {
     const session = getSessions().find((entry) => entry.sessionId === 'session-stop');
     expect(session?.state).toBe('Stopped');
     expect(session?.stoppedAt).toBeDefined();
+    expect(saveHistoryRecordMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        operationType: 'session_stop',
+        status: 'success',
+        targetName: 'session-stop',
+      })
+    );
   });
 
   it('getSessions returns all tracked sessions by sessionId', async () => {

@@ -1,6 +1,10 @@
+import { randomUUID } from 'crypto';
 import { runProcess, stopProcess } from './process-runner';
+import { saveHistoryRecord } from './runtime-history-service';
 import type {
   ManagedSession,
+  OperationStatus,
+  OperationType,
   SessionEvent,
   SessionEventType,
   SessionState,
@@ -76,6 +80,34 @@ async function waitForReadiness(healthEndpoint: string, timeoutMs = 30000): Prom
   return false;
 }
 
+function persistHistory(params: {
+  operationType: OperationType;
+  status: OperationStatus;
+  targetName: string;
+  startedAt: string;
+  errorMessage?: string;
+  metadata?: Record<string, unknown>;
+}): void {
+  const completedAt = new Date().toISOString();
+  const durationMs = Date.parse(completedAt) - Date.parse(params.startedAt);
+
+  try {
+    saveHistoryRecord({
+      id: randomUUID(),
+      operationType: params.operationType,
+      status: params.status,
+      targetName: params.targetName,
+      startedAt: params.startedAt,
+      completedAt,
+      durationMs: Number.isFinite(durationMs) ? durationMs : undefined,
+      errorMessage: params.errorMessage,
+      metadata: params.metadata,
+    });
+  } catch {
+    // History persistence failures must not break session control flow.
+  }
+}
+
 export function registerSessionEventListener(
   sessionId: string,
   listener: (event: SessionEvent) => void
@@ -91,6 +123,25 @@ export async function startSession(request: StartSessionRequest): Promise<StartS
   const readinessTimeoutMs = request.config?.readinessTimeoutMs ?? 30000;
   const healthEndpoint = request.config?.healthEndpoint ?? 'http://localhost:8080/health';
   const startedAt = new Date().toISOString();
+  let startHistoryRecorded = false;
+
+  const recordStartHistory = (status: OperationStatus, errorMessage?: string): void => {
+    if (startHistoryRecorded) {
+      return;
+    }
+    startHistoryRecorded = true;
+    persistHistory({
+      operationType: 'session_start',
+      status,
+      targetName: request.sessionId,
+      startedAt,
+      errorMessage,
+      metadata: {
+        healthEndpoint,
+        readinessTimeoutMs,
+      },
+    });
+  };
 
   sessions.set(request.sessionId, {
     sessionId: request.sessionId,
@@ -122,6 +173,7 @@ export async function startSession(request: StartSessionRequest): Promise<StartS
       error: message,
       stoppedAt: new Date().toISOString(),
     });
+    recordStartHistory('failed', message);
     emitSessionEvent(request.sessionId, 'error', { error: message });
   });
 
@@ -132,6 +184,7 @@ export async function startSession(request: StartSessionRequest): Promise<StartS
       error,
       stoppedAt: new Date().toISOString(),
     });
+    recordStartHistory('failed', error);
     emitSessionEvent(request.sessionId, 'error', { error });
     return {
       sessionId: request.sessionId,
@@ -143,6 +196,7 @@ export async function startSession(request: StartSessionRequest): Promise<StartS
   updateSession(request.sessionId, 'Active', {
     activeAt: new Date().toISOString(),
   });
+  recordStartHistory('success');
   emitSessionEvent(request.sessionId, 'active');
 
   return {
@@ -153,6 +207,7 @@ export async function startSession(request: StartSessionRequest): Promise<StartS
 
 export async function stopSession(request: StopSessionRequest): Promise<StopSessionResponse> {
   const session = sessions.get(request.sessionId);
+  const stopStartedAt = new Date().toISOString();
   if (!session || session.state !== 'Active') {
     return {
       sessionId: request.sessionId,
@@ -170,6 +225,13 @@ export async function stopSession(request: StopSessionRequest): Promise<StopSess
     updateSession(request.sessionId, 'Stopped', {
       stoppedAt: new Date().toISOString(),
     });
+    persistHistory({
+      operationType: 'session_stop',
+      status: 'success',
+      targetName: request.sessionId,
+      startedAt: stopStartedAt,
+      metadata: { strategy },
+    });
     emitSessionEvent(request.sessionId, 'stopped');
     return {
       sessionId: request.sessionId,
@@ -184,6 +246,14 @@ export async function stopSession(request: StopSessionRequest): Promise<StopSess
         error: message,
       });
     }
+    persistHistory({
+      operationType: 'session_stop',
+      status: 'failed',
+      targetName: request.sessionId,
+      startedAt: stopStartedAt,
+      errorMessage: message,
+      metadata: { strategy },
+    });
     return {
       sessionId: request.sessionId,
       stopped: false,
