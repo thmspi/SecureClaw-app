@@ -31,15 +31,15 @@ Requirements for initial macOS release with Windows compatibility built into arc
 
 ### User Clarity and Diagnostics
 
-- [ ] **DIAG-01**: Errors are shown in plain language with clear next-step actions.
-- [ ] **DIAG-02**: App provides a health dashboard with install/runtime status and component versions.
-- [ ] **DIAG-03**: User can export a redacted diagnostics bundle for IT/support.
+- [x] **DIAG-01**: Errors are shown in plain language with clear next-step actions.
+- [x] **DIAG-02**: App provides a health dashboard with install/runtime status and component versions.
+- [x] **DIAG-03**: User can export a redacted diagnostics bundle for IT/support.
 
 ### Security and Reliability
 
-- [ ] **SEC-01**: Sensitive local credentials/secrets are stored using OS-backed secure storage abstractions.
+- [x] **SEC-01**: Sensitive local credentials/secrets are stored using OS-backed secure storage abstractions.
 - [ ] **SEC-02**: Renderer process has no direct privileged system access; all privileged actions are mediated via typed IPC.
-- [ ] **SEC-03**: macOS packaged app supports signed distribution for enterprise-safe deployment baseline.
+- [x] **SEC-03**: macOS packaged app supports signed distribution for enterprise-safe deployment baseline.
 
 ## v2 Requirements
 
@@ -86,12 +86,12 @@ Which phases cover which requirements. Updated during roadmap creation.
 | RUN-02 | Phase 3 | Complete |
 | RUN-03 | Phase 3 | Complete |
 | RUN-04 | Phase 3 | Complete |
-| DIAG-01 | Phase 4 | Pending |
-| DIAG-02 | Phase 4 | Pending |
-| DIAG-03 | Phase 4 | Pending |
-| SEC-01 | Phase 4 | Pending |
+| DIAG-01 | Phase 4 | Complete |
+| DIAG-02 | Phase 4 | Complete |
+| DIAG-03 | Phase 4 | Complete |
+| SEC-01 | Phase 4 | Complete |
 | SEC-02 | Phase 1 | Pending |
-| SEC-03 | Phase 4 | Pending |
+| SEC-03 | Phase 4 | Complete |
 
 **Coverage:**
 - v1 requirements: 19 total

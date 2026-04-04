@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: planning
-stopped_at: Phase 4 context gathered
-last_updated: "2026-04-03T20:01:05.586Z"
-last_activity: 2026-04-03
+status: executing
+stopped_at: Completed 04-01-PLAN.md
+last_updated: "2026-04-04T08:53:49.246Z"
+last_activity: 2026-04-04
 progress:
   total_phases: 4
   completed_phases: 3
-  total_plans: 10
-  completed_plans: 10
+  total_plans: 15
+  completed_plans: 12
   percent: 100
 ---
 
@@ -25,11 +25,11 @@ See: `.planning/PROJECT.md` (updated 2026-03-31)
 
 ## Current Position
 
-Phase: 04 (diagnostics-security-storage-and-macos-distribution-baseline) — READY
-Plan: Not started
+Phase: 04 (diagnostics-security-storage-and-macos-distribution-baseline) — EXECUTING
+Plan: 3 of 5
 Next Phase: 04 (diagnostics-security-storage-and-macos-distribution-baseline)
-Status: Ready to plan
-Last activity: 2026-04-03
+Status: Ready to execute
+Last activity: 2026-04-04
 
 Progress: [██████████] 100%
 
@@ -57,6 +57,8 @@ Progress: [██████████] 100%
 | Phase 03 P02 | 9m | 2 tasks | 4 files |
 | Phase 03 P01 | 18m | 3 tasks | 6 files |
 | Phase 03 P03 | 6m | 4 tasks | 10 files |
+| Phase 04 P05 | 5 min | 3 tasks | 8 files |
+| Phase 04 P01 | 4 min | 3 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -76,6 +78,10 @@ Recent decisions affecting current work:
 - [Phase 03]: Use indexed history filters (operation/status/date) with descending started_at for troubleshooting retrieval.
 - [Phase 03]: Runtime handlers are registered in main/index.ts and bound to BrowserWindow for runtime event forwarding.
 - [Phase 03]: Management store remains non-persistent and reloads runtime state through IPC APIs.
+- [Phase 04]: Preflight fails early when APPLE_KEYCHAIN_PROFILE is missing before notarization checks.
+- [Phase 04]: Release gate smoke test enforces a 10-second launch window with timeout/gtimeout/manual fallback.
+- [Phase 04]: Use explicit support and secret error envelopes with userMessage, nextSteps, retryable, and optional technicalDetails.
+- [Phase 04]: Expose diagnostics and secret IPC as versioned diagnostics:v1:* and secrets:v1:* channels with zod schemas.
 
 ### Pending Todos
 
@@ -87,7 +93,7 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-03T20:01:05.525Z
-Stopped at: Phase 4 context gathered
-Resume file: .planning/phases/04-diagnostics-security-storage-and-macos-distribution-baseline/04-CONTEXT.md
+Last session: 2026-04-04T08:53:49.241Z
+Stopped at: Completed 04-01-PLAN.md
+Resume file: None
 Resume hint: Run /gsd-plan-phase 4 to start Phase 4 planning
