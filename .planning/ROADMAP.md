@@ -80,7 +80,7 @@ Plans:
 **Plans**: 5 plans
 Plans:
 - [x] 04-01-PLAN.md — Define diagnostics and secure secret storage contracts/channels.
-- [ ] 04-02-PLAN.md — Implement diagnostics backend (health snapshot, redacted ZIP export, diagnostics IPC).
+- [x] 04-02-PLAN.md — Implement diagnostics backend (health snapshot, redacted ZIP export, diagnostics IPC).
 - [x] 04-03-PLAN.md — Implement safeStorage-based secret store, security IPC, and uninstall/reset cleanup.
 - [ ] 04-04-PLAN.md — Wire diagnostics/security into preload/main and deliver Settings health + inline remediation UX.
 - [x] 04-05-PLAN.md — Configure macOS signed dmg/zip distribution with notarization and verification gates.
