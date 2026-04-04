@@ -36,8 +36,8 @@ describe('health-service', () => {
     mockListPluginPackages.mockResolvedValue({ packages: [{ id: 'p-1' }] });
     mockSpawnSync.mockImplementation((command: string) => ({
       status: 0,
-      stdout: Buffer.from(`${command} 1.0.0`),
-      stderr: Buffer.from(''),
+      stdout: `${command} 1.0.0`,
+      stderr: '',
     }));
   });
 
