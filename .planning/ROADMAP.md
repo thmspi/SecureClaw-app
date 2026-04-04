@@ -96,4 +96,4 @@ Phases execute in numeric order: 1 -> 1.1 -> 2 -> 2.1 -> 3 -> 3.1 -> 4
 | 1. Platform Core and Safety Boundaries | 0/3 | Not started | - |
 | 2. Guided Setup and Install Flows | 0/TBD | Not started | - |
 | 3. Managed Session and Plugin Runtime | 4/4 | Complete | 2026-04-03 |
-| 4. Diagnostics, Security Storage, and macOS Distribution Baseline | 0/TBD | Not started | - |
+| 4. Diagnostics, Security Storage, and macOS Distribution Baseline | 2/5 | In Progress | - |
