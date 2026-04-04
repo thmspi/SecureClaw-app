@@ -91,6 +91,11 @@ Recent decisions affecting current work:
 - [Phase 04]: Health severity uses worst-of component model (Critical > Warning > Healthy).
 - [Phase 04]: Diagnostics IPC handlers return typed SupportErrorEnvelope responses for validation/runtime failures.
 
+### Roadmap Evolution
+
+- Phase 5 added: I need to populate my configuration tab with multiple things : 1) Nemoclaw sand box policy, with a visual editor and the direct yaml editor 2) Available skills (visual editor and markdown editor) 3) Exact same for agent, rules, ... for openclaw llm
+- Phase 6 added: Create a visually impacting and selling landing page
+
 ### Pending Todos
 
 None yet.

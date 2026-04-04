@@ -75,4 +75,22 @@ describe('health-service', () => {
     expect(snapshot.components.plugins).toBe('Critical');
     expect(snapshot.overallSeverity).toBe('Critical');
   });
+
+  it('degrades gracefully when install/session data sources throw', async () => {
+    mockLoadInstallState.mockImplementation(() => {
+      throw new Error('sqlite unavailable');
+    });
+    mockGetSessions.mockImplementation(() => {
+      throw new Error('session store unavailable');
+    });
+    mockListPluginPackages.mockResolvedValue({ packages: [{ id: 'p-1' }] });
+
+    const { getHealthSnapshot } = await import('./health-service');
+    const snapshot = await getHealthSnapshot();
+
+    expect(snapshot.components.install).toBe('Warning');
+    expect(snapshot.components.runtime).toBe('Warning');
+    expect(snapshot.components.plugins).toBe('Healthy');
+    expect(snapshot.versions.app).toBe('1.0.0');
+  });
 });

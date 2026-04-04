@@ -1,10 +1,9 @@
 import { useEffect, useState } from 'react';
 import {
   LayoutDashboard,
-  Menu,
+  PanelLeft,
   Settings,
   SlidersHorizontal,
-  X,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -31,6 +30,7 @@ export default function ManagementPage() {
 
   const [menuOpen, setMenuOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<ManagementTab>('management');
+  const activeTabLabel = NAV_ITEMS.find((item) => item.id === activeTab)?.label ?? 'Management';
 
   useEffect(() => {
     void loadSessions();
@@ -102,25 +102,16 @@ export default function ManagementPage() {
       <Button
         variant="outline"
         size="icon"
-        className="fixed left-4 top-4 z-50"
+        className="fixed left-4 top-4 z-50 h-10 w-10 rounded-md shadow-sm"
         onClick={() => setMenuOpen((open) => !open)}
-        aria-label={menuOpen ? 'Close navigation menu' : 'Open navigation menu'}
+        aria-label={menuOpen ? 'Close panel menu' : 'Open panel menu'}
       >
-        {menuOpen ? <X className="size-4" /> : <Menu className="size-4" />}
+        <PanelLeft className="size-4" />
       </Button>
-
-      <div
-        className={cn(
-          'fixed inset-0 z-40 bg-black/40 transition-opacity duration-200',
-          menuOpen ? 'opacity-100' : 'pointer-events-none opacity-0'
-        )}
-        onClick={() => setMenuOpen(false)}
-        aria-hidden="true"
-      />
 
       <aside
         className={cn(
-          'fixed left-0 top-0 z-50 flex h-full w-72 flex-col border-r bg-card px-4 pb-6 pt-16 shadow-xl transition-transform duration-200',
+          'fixed left-0 top-0 z-40 flex h-full w-72 flex-col border-r bg-card px-4 pb-6 pt-16 shadow-xl transition-transform duration-200',
           menuOpen ? 'translate-x-0' : '-translate-x-full'
         )}
       >
@@ -138,7 +129,6 @@ export default function ManagementPage() {
                 className="w-full justify-start"
                 onClick={() => {
                   setActiveTab(item.id);
-                  setMenuOpen(false);
                 }}
               >
                 <Icon className="mr-2 size-4" />
@@ -149,8 +139,13 @@ export default function ManagementPage() {
         </nav>
       </aside>
 
-      <main className="mx-auto max-w-5xl px-6 pb-10 pt-20">
-        <h1 className="mb-6 text-3xl font-semibold">Session Management</h1>
+      <main
+        className={cn(
+          'mx-auto max-w-5xl px-6 pb-20 pt-10 transition-[padding-left] duration-200',
+          menuOpen ? 'pl-72' : 'pl-0'
+        )}
+      >
+        <h1 className="mb-6 text-3xl font-semibold">{activeTabLabel}</h1>
         {renderContent()}
       </main>
     </div>

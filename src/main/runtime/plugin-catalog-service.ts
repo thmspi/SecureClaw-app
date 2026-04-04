@@ -1,4 +1,7 @@
 import { spawn } from 'child_process';
+import { accessSync, constants, existsSync, readFileSync, readdirSync, rmSync } from 'fs';
+import { homedir } from 'os';
+import { delimiter, join } from 'path';
 import type {
   ImportPluginPackageRequest,
   ImportPluginPackageResponse,
@@ -19,12 +22,109 @@ interface CliResult {
   error?: string;
 }
 
-function runOpenClaw(args: string[], timeoutMs = 45000): Promise<CliResult> {
+interface RunOpenClawOptions {
+  profile?: string;
+}
+
+function isExecutable(filePath: string): boolean {
+  try {
+    accessSync(filePath, constants.X_OK);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function resolveBinary(binaryName: string, pathDirs: string[]): string | null {
+  for (const dir of pathDirs) {
+    const candidate = join(dir, binaryName);
+    if (isExecutable(candidate)) {
+      return candidate;
+    }
+  }
+  return null;
+}
+
+function hasNodeShebang(filePath: string): boolean {
+  try {
+    const firstLine = readFileSync(filePath, 'utf8').split('\n', 1)[0] ?? '';
+    return /^#!.*\bnode\b/.test(firstLine);
+  } catch {
+    return false;
+  }
+}
+
+function buildOpenClawEnv(): NodeJS.ProcessEnv {
+  const env = { ...process.env };
+  const existingPath = env.PATH ?? '';
+
+  const candidateDirs = new Set<string>();
+  if (existingPath) {
+    for (const dir of existingPath.split(delimiter)) {
+      if (dir.trim().length > 0) {
+        candidateDirs.add(dir);
+      }
+    }
+  }
+
+  const homeDir = env.HOME ?? homedir();
+  if (homeDir) {
+    candidateDirs.add(join(homeDir, '.secureclaw', 'npm-global', 'bin'));
+    candidateDirs.add(join(homeDir, '.volta', 'bin'));
+
+    const nvmVersionsDir = join(homeDir, '.nvm', 'versions', 'node');
+    if (existsSync(nvmVersionsDir)) {
+      for (const versionDir of readdirSync(nvmVersionsDir)) {
+        const binDir = join(nvmVersionsDir, versionDir, 'bin');
+        if (existsSync(binDir)) {
+          candidateDirs.add(binDir);
+        }
+      }
+    }
+  }
+
+  if (env.npm_config_prefix) {
+    candidateDirs.add(join(env.npm_config_prefix, 'bin'));
+  }
+
+  if (env.NPM_CONFIG_PREFIX) {
+    candidateDirs.add(join(env.NPM_CONFIG_PREFIX, 'bin'));
+  }
+
+  // Common macOS global binary locations for npm-installed CLIs.
+  candidateDirs.add('/usr/local/bin');
+  candidateDirs.add('/opt/homebrew/bin');
+  candidateDirs.add('/usr/bin');
+  candidateDirs.add('/bin');
+
+  env.PATH = Array.from(candidateDirs).join(delimiter);
+  return env;
+}
+
+function runOpenClaw(
+  args: string[],
+  timeoutMs = 45000,
+  options: RunOpenClawOptions = {}
+): Promise<CliResult> {
   return new Promise((resolve) => {
-    const child = spawn('openclaw', args, {
+    const env = buildOpenClawEnv();
+    const pathDirs = (env.PATH ?? '').split(delimiter).filter((dir) => dir.trim().length > 0);
+    const openClawBinary = resolveBinary(process.platform === 'win32' ? 'openclaw.exe' : 'openclaw', pathDirs);
+    const nodeBinary = resolveBinary(process.platform === 'win32' ? 'node.exe' : 'node', pathDirs);
+    const prefixArgs = options.profile ? ['--profile', options.profile] : [];
+
+    let command = openClawBinary ?? 'openclaw';
+    let commandArgs = [...prefixArgs, ...args];
+
+    if (openClawBinary && nodeBinary && hasNodeShebang(openClawBinary)) {
+      command = nodeBinary;
+      commandArgs = [openClawBinary, ...prefixArgs, ...args];
+    }
+
+    const child = spawn(command, commandArgs, {
       shell: false,
       stdio: ['pipe', 'pipe', 'pipe'],
-      env: process.env,
+      env,
     });
 
     const timer = setTimeout(() => {
@@ -142,15 +242,78 @@ function toUserError(result: CliResult, fallback: string): string {
     return fallback;
   }
 
-  if (combined.includes('ENOENT') || combined.includes('not found')) {
-    return 'OpenClaw CLI is not available on PATH. Install OpenClaw first.';
+  if (/env:\s*node:.*not found|\/usr\/bin\/env:.*node.*No such file/i.test(combined)) {
+    return 'OpenClaw CLI was found, but Node.js is not available in the runtime environment.';
+  }
+
+  if (
+    /spawn\s+openclaw\s+enoent/i.test(combined) ||
+    /(^|\n)\s*openclaw:\s*(command\s+not\s+found|not\s+found)\s*($|\n)/i.test(combined) ||
+    /no such file or directory.*openclaw/i.test(combined) ||
+    /\bENOENT\b/.test(combined)
+  ) {
+    return 'OpenClaw CLI is not available on PATH or managed install locations. Install OpenClaw first.';
+  }
+
+  if (/plugin not found/i.test(combined)) {
+    return `${combined}\nTry a fully-qualified spec (for example: clawhub:<plugin-name> or npm package name).`;
   }
 
   return combined;
 }
 
+function extractJsonDocument(raw: string): string | null {
+  const objectStart = raw.indexOf('{');
+  if (objectStart < 0) {
+    return null;
+  }
+
+  let inString = false;
+  let escaped = false;
+  let depth = 0;
+
+  for (let i = objectStart; i < raw.length; i += 1) {
+    const char = raw[i];
+
+    if (inString) {
+      if (escaped) {
+        escaped = false;
+      } else if (char === '\\') {
+        escaped = true;
+      } else if (char === '"') {
+        inString = false;
+      }
+      continue;
+    }
+
+    if (char === '"') {
+      inString = true;
+      continue;
+    }
+
+    if (char === '{') {
+      depth += 1;
+      continue;
+    }
+
+    if (char === '}') {
+      depth -= 1;
+      if (depth === 0) {
+        return raw.slice(objectStart, i + 1);
+      }
+    }
+  }
+
+  return raw.slice(objectStart);
+}
+
 function parsePluginsJson(raw: string): PluginPackage[] {
-  const parsed = JSON.parse(raw) as unknown;
+  const jsonDocument = extractJsonDocument(raw);
+  if (!jsonDocument) {
+    return [];
+  }
+
+  const parsed = JSON.parse(jsonDocument) as unknown;
   const items = Array.isArray(parsed)
     ? parsed
     : parsed && typeof parsed === 'object' && Array.isArray((parsed as Record<string, unknown>).plugins)
@@ -197,71 +360,62 @@ function parsePluginsJson(raw: string): PluginPackage[] {
 function parsePluginsTable(raw: string): PluginPackage[] {
   const lines = raw
     .split('\n')
-    .map((line) => line.trim())
+    .map((line) => line.trimEnd())
     .filter((line) => line.length > 0)
-    .filter((line) => !/^[-+| ]+$/.test(line))
-    .filter((line) => !/^id\s+/i.test(line))
+    .filter((line) => line.startsWith('│'))
+    .filter((line) => !/^[│\s─┌┐└┘├┤┬┴┼]+$/.test(line))
     .filter((line) => !/^no plugins/i.test(line));
 
   return lines
     .map((line) => {
-      const cells = line.includes('|')
-        ? line
-            .split('|')
-            .map((part) => part.trim())
-            .filter(Boolean)
-        : line.split(/\s+/).filter(Boolean);
-
-      if (cells.length === 0) {
+      const parts = line.split('│');
+      if (parts.length < 8) {
         return null;
       }
 
-      const id = cells[0];
-      const version = cells.length > 1 ? cells[1] : undefined;
-      const statusCell = cells.find((cell) => /(enabled|disabled|on|off)/i.test(cell)) ?? '';
-      const enabled = /(enabled|on)/i.test(statusCell);
+      const cells = parts.slice(1, -1).map((part) => part.trim());
+
+      if (cells.length < 6) {
+        return null;
+      }
+
+      const displayName = cells[0];
+      const id = cells[1];
+      const format = cells[2];
+      const status = cells[3];
+      const source = cells[4];
+      const version = cells[5];
+
+      if (!id || /^id$/i.test(id) || /^(name|format|status|source|version)$/i.test(id)) {
+        return null;
+      }
+
+      const enabled = /(loaded|enabled|on)/i.test(status);
+      const origin = source.startsWith('stock:') ? 'bundled' : source.startsWith('global:') ? 'local' : undefined;
 
       return normalizePlugin({
         id,
-        version,
-        enabled: statusCell ? enabled : true,
+        displayName: displayName || id,
+        version: version || undefined,
+        enabled,
+        source: format === 'openclaw' ? 'registry' : 'unknown',
+        origin,
+        removable: origin !== 'bundled',
         category: 'Other',
-        source: 'unknown',
-        removable: true,
       });
     })
     .filter((plugin): plugin is PluginPackage => Boolean(plugin));
 }
 
-function parseSinglePlugin(raw: string, packageName: string): PluginPackage {
-  const parsed = JSON.parse(raw) as Record<string, unknown>;
-  const id =
-    (typeof parsed.id === 'string' && parsed.id) ||
-    (typeof parsed.name === 'string' && parsed.name) ||
-    packageName;
-
-  return normalizePlugin({
-    id,
-    displayName: (parsed.displayName as string) ?? (parsed.name as string) ?? id,
-    version: typeof parsed.version === 'string' ? parsed.version : undefined,
-    enabled: typeof parsed.enabled === 'boolean' ? parsed.enabled : true,
-    description: typeof parsed.description === 'string' ? parsed.description : undefined,
-    category: derivePluginCategory(parsed, id),
-    source:
-      typeof parsed.source === 'string' && (parsed.source === 'local' || parsed.source === 'registry')
-        ? parsed.source
-        : 'unknown',
-    origin: typeof parsed.origin === 'string' ? parsed.origin : undefined,
-    removable: parsed.origin !== 'bundled',
-  });
-}
-
-async function installWithFallback(packageName: string): Promise<CliResult> {
-  const first = await runOpenClaw(['plugins', 'install', packageName, '--yes']);
+async function installWithFallback(
+  packageName: string,
+  options: RunOpenClawOptions = {}
+): Promise<CliResult> {
+  const first = await runOpenClaw(['plugins', 'install', packageName, '--yes'], 90000, options);
   if (first.ok || supportsYesFlag(first)) {
     return first;
   }
-  return runOpenClaw(['plugins', 'install', packageName]);
+  return runOpenClaw(['plugins', 'install', packageName], 90000, options);
 }
 
 async function uninstallWithFallback(pluginId: string): Promise<CliResult> {
@@ -307,27 +461,34 @@ export async function validatePluginPackage(
     };
   }
 
-  const result = await runOpenClaw(['plugins', 'inspect', packageName, '--json']);
-  if (!result.ok) {
-    return {
-      valid: false,
-      packageName,
-      error: toUserError(result, `Plugin "${packageName}" is not valid.`),
-    };
-  }
+  const validationProfile = `secureclaw-validate-${Date.now().toString(36)}-${Math.random()
+    .toString(36)
+    .slice(2, 8)}`;
+  const profileRoot = join(homedir(), `.openclaw-${validationProfile}`);
 
   try {
+    const result = await installWithFallback(packageName, { profile: validationProfile });
+    if (!result.ok) {
+      return {
+        valid: false,
+        packageName,
+        error: toUserError(result, `Plugin "${packageName}" is not installable.`),
+      };
+    }
+
     return {
       valid: true,
       packageName,
-      plugin: parseSinglePlugin(result.stdout, packageName),
+      plugin: normalizePlugin({ id: packageName, source: 'registry' }),
     };
   } catch {
     return {
-      valid: true,
+      valid: false,
       packageName,
-      plugin: normalizePlugin({ id: packageName, source: 'unknown' }),
+      error: `Plugin "${packageName}" is not installable.`,
     };
+  } finally {
+    rmSync(profileRoot, { recursive: true, force: true });
   }
 }
 

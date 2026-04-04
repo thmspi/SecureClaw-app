@@ -34,7 +34,12 @@ function probeVersion(command: string): string | null {
 }
 
 function deriveInstallSeverity(): HealthSeverity {
-  const installState = loadInstallState();
+  let installState: ReturnType<typeof loadInstallState> = null;
+  try {
+    installState = loadInstallState();
+  } catch {
+    return 'Warning';
+  }
   if (!installState) {
     return 'Warning';
   }
@@ -54,7 +59,12 @@ function deriveInstallSeverity(): HealthSeverity {
 }
 
 function deriveRuntimeSeverity(): HealthSeverity {
-  const sessions = getSessions();
+  let sessions: ReturnType<typeof getSessions> = [];
+  try {
+    sessions = getSessions();
+  } catch {
+    return 'Warning';
+  }
   if (sessions.some((session) => session.state === 'Active')) {
     return 'Healthy';
   }

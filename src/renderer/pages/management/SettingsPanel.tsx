@@ -2,10 +2,13 @@ import { useEffect, useMemo, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import InlineSupportError from '@/components/management/InlineSupportError';
+import { cn } from '@/lib/utils';
 import { useManagementStore } from '@/stores/management-store';
 import type {
   HealthComponentId,
+  HealthSnapshot,
   HealthSeverity,
 } from '../../../shared/diagnostics/diagnostics-contracts';
 
@@ -27,14 +30,67 @@ function readTheme(): boolean {
   return document.documentElement.classList.contains('dark');
 }
 
-function toSeverityVariant(severity: HealthSeverity): 'default' | 'secondary' | 'destructive' {
-  if (severity === 'Critical') {
-    return 'destructive';
+function toSeverityClassName(
+  severity?: HealthSeverity,
+  componentId?: HealthComponentId
+): string | undefined {
+  if (!severity) {
+    return 'bg-muted text-foreground';
   }
+
+  if (severity === 'Healthy') {
+    return 'bg-emerald-600 text-white dark:bg-emerald-500 dark:text-emerald-950';
+  }
+
   if (severity === 'Warning') {
-    return 'secondary';
+    if (componentId === 'runtime') {
+      return 'bg-destructive text-destructive-foreground';
+    }
+    return 'bg-amber-500 text-amber-950 dark:bg-amber-400 dark:text-amber-950';
   }
-  return 'default';
+
+  return 'bg-destructive text-destructive-foreground';
+}
+
+function renderComponentStatus(componentId: HealthComponentId, severity?: HealthSeverity): string {
+  if (!severity) {
+    return 'No data';
+  }
+
+  if (componentId === 'runtime' && severity === 'Warning') {
+    return 'Not running';
+  }
+
+  return severity;
+}
+
+function getNonWorkingElements(snapshot: HealthSnapshot | null): string[] {
+  if (!snapshot) {
+    return ['Health snapshot is unavailable.'];
+  }
+
+  const issues: string[] = [];
+  const componentIds = Object.keys(HEALTH_COMPONENT_LABELS) as HealthComponentId[];
+
+  for (const componentId of componentIds) {
+    const severity = snapshot.components[componentId];
+    if (severity === 'Healthy') {
+      continue;
+    }
+
+    issues.push(`${HEALTH_COMPONENT_LABELS[componentId]}: ${renderComponentStatus(componentId, severity)}`);
+  }
+
+  const versionEntries = Object.entries(snapshot.versions) as Array<
+    [keyof HealthSnapshot['versions'], string | null]
+  >;
+  for (const [key, value] of versionEntries) {
+    if (!value) {
+      issues.push(`${key}: Not available`);
+    }
+  }
+
+  return issues;
 }
 
 const HEALTH_COMPONENT_LABELS: Record<HealthComponentId, string> = {
@@ -53,8 +109,6 @@ export default function SettingsPanel() {
     diagnosticsError,
     loadHealth,
     refreshHealth,
-    startHealthAutoRefresh,
-    stopHealthAutoRefresh,
     exportDiagnostics,
   } = useManagementStore();
 
@@ -73,6 +127,11 @@ export default function SettingsPanel() {
     [healthSnapshot]
   );
 
+  const nonWorkingElements = useMemo(() => getNonWorkingElements(healthSnapshot ?? null), [healthSnapshot]);
+
+  const getWarningTooltip = (severity?: HealthSeverity): string[] =>
+    severity === 'Warning' ? nonWorkingElements : [];
+
   useEffect(() => {
     const initial = readTheme();
     setDarkMode(initial);
@@ -81,11 +140,7 @@ export default function SettingsPanel() {
 
   useEffect(() => {
     void loadHealth();
-    startHealthAutoRefresh();
-    return () => {
-      stopHealthAutoRefresh();
-    };
-  }, [loadHealth, startHealthAutoRefresh, stopHealthAutoRefresh]);
+  }, [loadHealth]);
 
   const handleThemeToggle = () => {
     const next = !darkMode;
@@ -152,21 +207,91 @@ export default function SettingsPanel() {
 
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-sm font-medium">Overall:</span>
-          <Badge variant={toSeverityVariant(healthSnapshot?.overallSeverity ?? 'Warning')}>
-            {healthSnapshot?.overallSeverity ?? 'No data'}
-          </Badge>
+          <TooltipProvider>
+            {getWarningTooltip(healthSnapshot?.overallSeverity).length > 0 ? (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span>
+                    <Badge
+                      variant="outline"
+                      className={cn(
+                        'border-transparent',
+                        toSeverityClassName(healthSnapshot?.overallSeverity)
+                      )}
+                    >
+                      {healthSnapshot?.overallSeverity ?? 'No data'}
+                    </Badge>
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent side="top" sideOffset={8}>
+                  <div className="space-y-1">
+                    <p className="font-semibold">Non-working elements</p>
+                    {nonWorkingElements.map((item) => (
+                      <p key={`overall-${item}`}>{item}</p>
+                    ))}
+                  </div>
+                </TooltipContent>
+              </Tooltip>
+            ) : (
+              <Badge
+                variant="outline"
+                className={cn(
+                  'border-transparent',
+                  toSeverityClassName(healthSnapshot?.overallSeverity)
+                )}
+              >
+                {healthSnapshot?.overallSeverity ?? 'No data'}
+              </Badge>
+            )}
+          </TooltipProvider>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          {componentEntries.map((entry) => (
-            <Badge
-              key={entry.componentId}
-              variant={toSeverityVariant(entry.severity ?? 'Warning')}
-              className="capitalize"
-            >
-              {entry.label}: {entry.severity ?? 'No data'}
-            </Badge>
-          ))}
+          <TooltipProvider>
+            {componentEntries.map((entry) => {
+              const warningItems = getWarningTooltip(entry.severity);
+              if (warningItems.length > 0) {
+                return (
+                  <Tooltip key={entry.componentId}>
+                    <TooltipTrigger asChild>
+                      <span>
+                        <Badge
+                          variant="outline"
+                          className={cn(
+                            'capitalize border-transparent',
+                            toSeverityClassName(entry.severity, entry.componentId)
+                          )}
+                        >
+                          {entry.label}: {renderComponentStatus(entry.componentId, entry.severity)}
+                        </Badge>
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" sideOffset={8}>
+                      <div className="space-y-1">
+                        <p className="font-semibold">Non-working elements</p>
+                        {warningItems.map((item) => (
+                          <p key={`${entry.componentId}-${item}`}>{item}</p>
+                        ))}
+                      </div>
+                    </TooltipContent>
+                  </Tooltip>
+                );
+              }
+
+              return (
+                <Badge
+                  key={entry.componentId}
+                  variant="outline"
+                  className={cn(
+                    'capitalize border-transparent',
+                    toSeverityClassName(entry.severity, entry.componentId)
+                  )}
+                >
+                  {entry.label}: {renderComponentStatus(entry.componentId, entry.severity)}
+                </Badge>
+              );
+            })}
+          </TooltipProvider>
         </div>
 
         <div className="rounded-md border">

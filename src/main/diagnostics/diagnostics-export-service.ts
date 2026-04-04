@@ -11,6 +11,7 @@ import type {
   SupportErrorEnvelope,
   VersionKey,
 } from '../../shared/diagnostics/diagnostics-contracts';
+import type { GetHistoryResponse } from '../../shared/runtime/runtime-contracts';
 import { loadInstallState } from '../install/install-state-service';
 import { getHistory } from '../runtime/runtime-history-service';
 import {
@@ -61,7 +62,12 @@ function toAggregateSummary(summary: RedactionMatcherSummary): DiagnosticsExport
 }
 
 function buildFallbackHealthSnapshot(): HealthSnapshot {
-  const installState = loadInstallState();
+  let installState: ReturnType<typeof loadInstallState> = null;
+  try {
+    installState = loadInstallState();
+  } catch {
+    installState = null;
+  }
   const installSeverity = installState?.status === 'failed' ? 'Critical' : installState ? 'Warning' : 'Healthy';
 
   return {
@@ -142,8 +148,19 @@ export async function exportDiagnosticsBundle(
 
     const healthSnapshot = input.healthSnapshot ?? buildFallbackHealthSnapshot();
     const versions = normalizeVersions(healthSnapshot.versions);
-    const history = getHistory({ fromDate: daysAgoIso(includeDays), limit: 500 });
-    const installState = loadInstallState();
+    let history: GetHistoryResponse = { records: [], total: 0 };
+    try {
+      history = getHistory({ fromDate: daysAgoIso(includeDays), limit: 500 });
+    } catch {
+      history = { records: [], total: 0 };
+    }
+
+    let installState: ReturnType<typeof loadInstallState> = null;
+    try {
+      installState = loadInstallState();
+    } catch {
+      installState = null;
+    }
     const logSnapshot = await readLogSnapshot();
 
     const summaries: RedactionMatcherSummary[] = [];

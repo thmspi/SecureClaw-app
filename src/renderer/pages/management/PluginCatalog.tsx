@@ -54,6 +54,7 @@ export default function PluginCatalog() {
   const [packageName, setPackageName] = useState('');
   const [validationPassed, setValidationPassed] = useState(false);
   const [validationMessage, setValidationMessage] = useState<string | null>(null);
+  const [validationInFlight, setValidationInFlight] = useState(false);
 
   const nativeUninstallablePlugins = useMemo(
     () => sortPluginsByName(pluginPackages.filter((plugin) => plugin.removable === false)),
@@ -97,15 +98,20 @@ export default function PluginCatalog() {
       return;
     }
 
-    const result = await validatePluginPackage(trimmed);
-    if (!result.valid) {
-      setValidationPassed(false);
-      setValidationMessage(result.error ?? `Plugin ${trimmed} is not valid.`);
-      return;
-    }
+    setValidationInFlight(true);
+    try {
+      const result = await validatePluginPackage(trimmed);
+      if (!result.valid) {
+        setValidationPassed(false);
+        setValidationMessage(result.error ?? `Plugin ${trimmed} is not valid.`);
+        return;
+      }
 
-    setValidationPassed(true);
-    setValidationMessage(`Plugin ${trimmed} is valid.`);
+      setValidationPassed(true);
+      setValidationMessage(`Plugin ${trimmed} is valid.`);
+    } finally {
+      setValidationInFlight(false);
+    }
   };
 
   const handleImport = async () => {
@@ -230,10 +236,17 @@ export default function PluginCatalog() {
               </div>
 
               <DialogFooter>
-                <Button variant="outline" onClick={handleValidate} disabled={pluginMutationInFlight}>
-                  Verify
+                <Button
+                  variant="outline"
+                  onClick={handleValidate}
+                  disabled={pluginMutationInFlight || validationInFlight || packageName.trim().length === 0}
+                >
+                  {validationInFlight ? 'Verifying...' : 'Verify'}
                 </Button>
-                <Button onClick={handleImport} disabled={!validationPassed || pluginMutationInFlight}>
+                <Button
+                  onClick={handleImport}
+                  disabled={!validationPassed || pluginMutationInFlight || validationInFlight}
+                >
                   {pluginMutationInFlight ? 'Importing...' : 'Import'}
                 </Button>
               </DialogFooter>

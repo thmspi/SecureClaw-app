@@ -40,7 +40,36 @@ jest.mock('../runtime/runtime-history-service', () => ({
   })),
 }));
 
+jest.mock('../install/install-state-service', () => ({
+  loadInstallState: jest.fn(() => null),
+}));
+
+const mockGetHistory = jest.requireMock('../runtime/runtime-history-service').getHistory as jest.Mock;
+const mockLoadInstallState = jest.requireMock('../install/install-state-service')
+  .loadInstallState as jest.Mock;
+
 describe('diagnostics-export-service', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockGetHistory.mockReturnValue({
+      records: [
+        {
+          id: 'h-1',
+          operationType: 'session_start',
+          status: 'failed',
+          targetName: 'runtime',
+          startedAt: '2026-04-03T10:00:00.000Z',
+          errorMessage: 'Bearer abc123 for user@example.com at /Users/alice/project',
+          metadata: {
+            token: 'tok_2',
+          },
+        },
+      ],
+      total: 1,
+    });
+    mockLoadInstallState.mockReturnValue(null);
+  });
+
   it('writes one ZIP bundle with redacted diagnostics artifacts and summary counts', async () => {
     const { exportDiagnosticsBundle } = await import('./diagnostics-export-service');
     const outputDir = mkdtempSync(join(tmpdir(), 'secureclaw-diag-test-'));
@@ -81,6 +110,29 @@ describe('diagnostics-export-service', () => {
       expect(redactionSummary.secretMatches).toBeGreaterThan(0);
       expect(redactionSummary.pathMatches).toBeGreaterThan(0);
       expect(redactionSummary.emailMatches).toBeGreaterThan(0);
+    } finally {
+      rmSync(outputDir, { recursive: true, force: true });
+    }
+  });
+
+  it('still exports diagnostics when history and install state backends are unavailable', async () => {
+    mockGetHistory.mockImplementation(() => {
+      throw new Error('history db unavailable');
+    });
+    mockLoadInstallState.mockImplementation(() => {
+      throw new Error('install db unavailable');
+    });
+
+    const { exportDiagnosticsBundle } = await import('./diagnostics-export-service');
+    const outputDir = mkdtempSync(join(tmpdir(), 'secureclaw-diag-test-'));
+    try {
+      const result = await exportDiagnosticsBundle({
+        includeDays: 7,
+        outputDir,
+      });
+
+      expect(result.error).toBeUndefined();
+      expect(result.bundlePath).toMatch(/\.zip$/);
     } finally {
       rmSync(outputDir, { recursive: true, force: true });
     }
