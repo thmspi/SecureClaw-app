@@ -7,6 +7,7 @@ import {
   setMainWindow as setRuntimeMainWindow,
   initializeRuntimeHistoryTracking,
 } from './ipc/runtime-router';
+import { registerSecurityHandlers } from './ipc/security-router';
 import { installOrchestrator } from './install/install-orchestrator';
 
 const devServerUrl = process.env.VITE_DEV_SERVER_URL;
@@ -58,6 +59,7 @@ function registerIpcHandlers(mainWindow: BrowserWindow): void {
 
   registerPlatformHandlers(ipcMain);
   registerRuntimeHandlers(ipcMain);
+  registerSecurityHandlers(ipcMain);
   registerInstallHandlers(ipcMain, mainWindow);
   initializeRuntimeHistoryTracking();
   setRuntimeMainWindow(mainWindow);
