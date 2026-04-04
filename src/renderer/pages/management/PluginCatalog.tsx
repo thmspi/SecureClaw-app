@@ -11,6 +11,9 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import InlineSupportError, {
+  classifyRuntimeStringError,
+} from '@/components/management/InlineSupportError';
 import { useManagementStore } from '@/stores/management-store';
 import type { PluginPackage } from '../../../shared/runtime/runtime-contracts';
 
@@ -55,6 +58,10 @@ export default function PluginCatalog() {
   const nativeUninstallablePlugins = useMemo(
     () => sortPluginsByName(pluginPackages.filter((plugin) => plugin.removable === false)),
     [pluginPackages]
+  );
+  const pluginSupportError = useMemo(
+    () => (pluginError ? classifyRuntimeStringError(pluginError, 'complete this plugin action') : null),
+    [pluginError]
   );
 
   const categorizedPlugins = useMemo(() => {
@@ -219,9 +226,7 @@ export default function PluginCatalog() {
                     setValidationMessage(null);
                   }}
                 />
-                {(validationMessage || pluginError) && (
-                  <p className="text-sm text-muted-foreground">{validationMessage ?? pluginError}</p>
-                )}
+                {validationMessage && <p className="text-sm text-muted-foreground">{validationMessage}</p>}
               </div>
 
               <DialogFooter>
@@ -237,7 +242,13 @@ export default function PluginCatalog() {
         </div>
       </div>
 
-      {pluginError && <p className="text-sm text-destructive">{pluginError}</p>}
+      {pluginSupportError && (
+        <InlineSupportError
+          title="Plugin Catalog Error"
+          error={pluginSupportError}
+          onRetry={pluginSupportError.retryable ? () => void loadPluginPackages() : undefined}
+        />
+      )}
 
       <div className="rounded-lg border">
         <div className="max-h-[26rem] overflow-y-auto">
