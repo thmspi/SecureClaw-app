@@ -2,7 +2,24 @@ import { mkdtempSync, rmSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
 import { execFileSync } from 'child_process';
-import { exportDiagnosticsBundle } from './diagnostics-export-service';
+
+jest.mock('electron', () => ({
+  app: {
+    getPath: jest.fn(() => tmpdir()),
+    getVersion: jest.fn(() => '1.0.0'),
+  },
+}));
+
+jest.mock('electron-log', () => ({
+  __esModule: true,
+  default: {
+    transports: {
+      file: {
+        getFile: jest.fn(() => ({ path: join(tmpdir(), 'secureclaw-test.log') })),
+      },
+    },
+  },
+}));
 
 jest.mock('../runtime/runtime-history-service', () => ({
   getHistory: jest.fn(() => ({
@@ -14,6 +31,9 @@ jest.mock('../runtime/runtime-history-service', () => ({
         targetName: 'runtime',
         startedAt: '2026-04-03T10:00:00.000Z',
         errorMessage: 'Bearer abc123 for user@example.com at /Users/alice/project',
+        metadata: {
+          token: 'tok_2',
+        },
       },
     ],
     total: 1,
@@ -22,6 +42,7 @@ jest.mock('../runtime/runtime-history-service', () => ({
 
 describe('diagnostics-export-service', () => {
   it('writes one ZIP bundle with redacted diagnostics artifacts and summary counts', async () => {
+    const { exportDiagnosticsBundle } = await import('./diagnostics-export-service');
     const outputDir = mkdtempSync(join(tmpdir(), 'secureclaw-diag-test-'));
     try {
       const result = await exportDiagnosticsBundle({
