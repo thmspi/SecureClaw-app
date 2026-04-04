@@ -8,20 +8,36 @@ import type {
   SessionState,
   ValidatePluginPackageResponse,
 } from '../../shared/runtime/runtime-contracts';
+import type {
+  HealthSnapshot,
+  SupportErrorEnvelope,
+} from '../../shared/diagnostics/diagnostics-contracts';
 
 interface ManagementState {
   sessions: ManagedSession[];
   activeSessions: ManagedSession[];
   sessionStarting: boolean;
   sessionStopping: boolean;
+  healthSnapshot: HealthSnapshot | null;
+  healthLoading: boolean;
+  healthError?: SupportErrorEnvelope;
+  diagnosticsExporting: boolean;
+  diagnosticsExportPath?: string;
+  diagnosticsError?: SupportErrorEnvelope;
 
   pluginPackages: PluginPackage[];
   selectedPluginIds: string[];
   pluginsLoading: boolean;
   pluginMutationInFlight: boolean;
   pluginError?: string;
+  healthAutoRefreshIntervalId: number | null;
 
   loadSessions: () => Promise<void>;
+  loadHealth: (forceRefresh?: boolean) => Promise<void>;
+  refreshHealth: () => Promise<void>;
+  startHealthAutoRefresh: () => void;
+  stopHealthAutoRefresh: () => void;
+  exportDiagnostics: (includeDays?: number) => Promise<void>;
   startSession: (
     sessionId: string,
     healthEndpoint?: string
@@ -61,6 +77,46 @@ function mapSessionEventToState(type: SessionEvent['type']): SessionState {
   }
 }
 
+function toSupportErrorEnvelope(
+  error: unknown,
+  fallbackMessage: string,
+  retryable = true
+): SupportErrorEnvelope {
+  if (!error || typeof error !== 'object') {
+    return {
+      userMessage: fallbackMessage,
+      nextSteps: [
+        'Retry the action from Settings > Health.',
+        'If this keeps failing, export diagnostics and share with IT support.',
+      ],
+      retryable,
+      errorCode: 'DIAGNOSTICS_RENDERER_OPERATION_FAILED',
+      technicalDetails: error instanceof Error ? error.message : String(error),
+    };
+  }
+
+  const maybeEnvelope = error as Partial<SupportErrorEnvelope>;
+  if (
+    typeof maybeEnvelope.userMessage === 'string' &&
+    Array.isArray(maybeEnvelope.nextSteps) &&
+    typeof maybeEnvelope.retryable === 'boolean' &&
+    typeof maybeEnvelope.errorCode === 'string'
+  ) {
+    return maybeEnvelope as SupportErrorEnvelope;
+  }
+
+  return {
+    userMessage: fallbackMessage,
+    nextSteps: [
+      'Retry the action from Settings > Health.',
+      'If this keeps failing, export diagnostics and share with IT support.',
+    ],
+    retryable,
+    errorCode: 'DIAGNOSTICS_RENDERER_OPERATION_FAILED',
+    technicalDetails: error instanceof Error ? error.message : String(error),
+  };
+}
+
 export const useManagementStore = create<ManagementState>()(
   persist(
     (set, get) => ({
@@ -68,12 +124,19 @@ export const useManagementStore = create<ManagementState>()(
       activeSessions: [],
       sessionStarting: false,
       sessionStopping: false,
+      healthSnapshot: null,
+      healthLoading: false,
+      healthError: undefined,
+      diagnosticsExporting: false,
+      diagnosticsExportPath: undefined,
+      diagnosticsError: undefined,
 
       pluginPackages: [],
       selectedPluginIds: [],
       pluginsLoading: false,
       pluginMutationInFlight: false,
       pluginError: undefined,
+      healthAutoRefreshIntervalId: null,
 
       loadSessions: async () => {
         try {
@@ -84,6 +147,117 @@ export const useManagementStore = create<ManagementState>()(
           });
         } catch (error) {
           console.error('Failed to load sessions:', error);
+        }
+      },
+
+      loadHealth: async (forceRefresh) => {
+        set({ healthLoading: true, healthError: undefined });
+        try {
+          if (!window.secureClaw?.diagnostics?.getHealth) {
+            set({
+              healthError: toSupportErrorEnvelope(
+                new Error('window.secureClaw.diagnostics.getHealth is unavailable.'),
+                'Health diagnostics are currently unavailable on this build.',
+                false
+              ),
+              healthSnapshot: null,
+            });
+            return;
+          }
+
+          const response = await window.secureClaw.diagnostics.getHealth({ forceRefresh });
+          if (response.error) {
+            set({
+              healthError: toSupportErrorEnvelope(
+                response.error,
+                'Unable to refresh health diagnostics right now.',
+                response.error.retryable
+              ),
+              healthSnapshot: response.snapshot ?? null,
+            });
+            return;
+          }
+
+          set({
+            healthSnapshot: response.snapshot ?? null,
+            healthError: undefined,
+          });
+        } catch (error) {
+          set({
+            healthSnapshot: null,
+            healthError: toSupportErrorEnvelope(
+              error,
+              'Unable to refresh health diagnostics right now.'
+            ),
+          });
+        } finally {
+          set({ healthLoading: false });
+        }
+      },
+
+      refreshHealth: async () => {
+        await get().loadHealth(true);
+      },
+
+      startHealthAutoRefresh: () => {
+        get().stopHealthAutoRefresh();
+        const intervalId = window.setInterval(() => void get().loadHealth(), 10000);
+        set({ healthAutoRefreshIntervalId: intervalId });
+      },
+
+      stopHealthAutoRefresh: () => {
+        const intervalId = get().healthAutoRefreshIntervalId;
+        if (intervalId !== null) {
+          window.clearInterval(intervalId);
+          set({ healthAutoRefreshIntervalId: null });
+        }
+      },
+
+      exportDiagnostics: async (includeDays = 7) => {
+        set({
+          diagnosticsExporting: true,
+          diagnosticsError: undefined,
+          diagnosticsExportPath: undefined,
+        });
+        try {
+          if (!window.secureClaw?.diagnostics?.exportBundle) {
+            set({
+              diagnosticsError: toSupportErrorEnvelope(
+                new Error('window.secureClaw.diagnostics.exportBundle is unavailable.'),
+                'Diagnostics export is currently unavailable on this build.',
+                false
+              ),
+            });
+            return;
+          }
+
+          const response = await window.secureClaw.diagnostics.exportBundle({ includeDays });
+          if (response.error) {
+            set({
+              diagnosticsError: toSupportErrorEnvelope(
+                response.error,
+                'Unable to export diagnostics right now.',
+                response.error.retryable
+              ),
+              diagnosticsExportPath: undefined,
+            });
+            return;
+          }
+
+          set({
+            diagnosticsExportPath: response.bundlePath,
+            diagnosticsError: undefined,
+          });
+        } catch (error) {
+          set({
+            diagnosticsExportPath: undefined,
+            diagnosticsError: toSupportErrorEnvelope(
+              error,
+              'Unable to export diagnostics right now.'
+            ),
+          });
+        } finally {
+          set({ diagnosticsExporting: false });
         }
       },
 
