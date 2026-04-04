@@ -1,0 +1,10 @@
+appId: com.secureclaw.app
+productName: SecureClaw
+directories:
+  output: release
+mac:
+  target: [dmg, zip]
+  hardenedRuntime: true
+  entitlements: build/entitlements.mac.plist
+  entitlementsInherit: build/entitlements.mac.plist
+afterSign: scripts/release/notarize.mjs

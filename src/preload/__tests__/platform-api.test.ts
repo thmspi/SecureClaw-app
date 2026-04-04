@@ -61,6 +61,34 @@ describe('Preload Platform API', () => {
     expect(typeof platformAPI.getPaths).toBe('function');
   });
 
+  it('should expose diagnostics API methods', async () => {
+    await import('../platform-api');
+
+    const calls = mockContextBridge.exposeInMainWorld.mock.calls;
+    const diagnosticsAPI = calls[0]?.[1]?.diagnostics;
+
+    expect(diagnosticsAPI).toHaveProperty('getHealth');
+    expect(typeof diagnosticsAPI.getHealth).toBe('function');
+    expect(diagnosticsAPI).toHaveProperty('exportBundle');
+    expect(typeof diagnosticsAPI.exportBundle).toBe('function');
+  });
+
+  it('should expose secrets API methods', async () => {
+    await import('../platform-api');
+
+    const calls = mockContextBridge.exposeInMainWorld.mock.calls;
+    const secretsAPI = calls[0]?.[1]?.secrets;
+
+    expect(secretsAPI).toHaveProperty('setSecret');
+    expect(typeof secretsAPI.setSecret).toBe('function');
+    expect(secretsAPI).toHaveProperty('getSecret');
+    expect(typeof secretsAPI.getSecret).toBe('function');
+    expect(secretsAPI).toHaveProperty('deleteSecret');
+    expect(typeof secretsAPI.deleteSecret).toBe('function');
+    expect(secretsAPI).toHaveProperty('deleteScopeSecrets');
+    expect(typeof secretsAPI.deleteScopeSecrets).toBe('function');
+  });
+
   it('should NOT expose raw ipcRenderer', async () => {
     await import('../platform-api');
     
@@ -69,5 +97,7 @@ describe('Preload Platform API', () => {
     
     expect(exposedAPI).not.toHaveProperty('ipcRenderer');
     expect(exposedAPI?.platform).not.toHaveProperty('ipcRenderer');
+    expect(exposedAPI?.diagnostics).not.toHaveProperty('ipcRenderer');
+    expect(exposedAPI?.secrets).not.toHaveProperty('ipcRenderer');
   });
 });

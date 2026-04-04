@@ -7,15 +7,20 @@ import type {
   InstallError,
   InstallState,
 } from '../../shared/install/install-contracts';
+import type { SecretScope } from '../../shared/security/secret-contracts';
 import { saveInstallState, loadInstallState, clearInstallState } from './install-state-service';
 import { rollbackService } from './rollback-service';
 import { runAllPrerequisiteChecks } from './prerequisite-service';
+import { deleteScope } from '../security/secret-store-service';
 import {
   INSTALL_STEPS,
   ProgressCallback,
   cancelActiveInstallCommand,
   InstallCommandCancelledError,
 } from './install-steps';
+
+const SECRET_KEY_PREFIX = 'secureclaw:';
+const SECRET_SCOPES: SecretScope[] = ['install', 'runtime', 'plugin', 'support'];
 
 /**
  * Orchestrates install flow with progress events, state persistence, and rollback support
@@ -211,6 +216,35 @@ Then restart Electron.`
     }
   }
 
+  private cleanupScopedSecrets(options: {
+    errors: string[];
+    reason: 'cancel' | 'manual-uninstall';
+  }): void {
+    for (const scope of SECRET_SCOPES) {
+      try {
+        const cleanupResult = deleteScope({ scope });
+        if (cleanupResult.success) {
+          continue;
+        }
+
+        const warning = `Secret cleanup warning for ${SECRET_KEY_PREFIX}${scope}: ${cleanupResult.error?.userMessage ?? 'Unknown secret cleanup error'}`;
+        options.errors.push(warning);
+        console.warn(
+          `[install] ${warning}; reason=${options.reason}; technical=${cleanupResult.error?.technicalDetails ?? 'none'}`,
+          cleanupResult.error
+        );
+      } catch (error) {
+        const technicalDetails = error instanceof Error ? error.message : String(error);
+        const warning = `Secret cleanup warning for ${SECRET_KEY_PREFIX}${scope}: ${technicalDetails}`;
+        options.errors.push(warning);
+        console.warn(
+          `[install] ${warning}; reason=${options.reason}; technical=${technicalDetails}`,
+          error
+        );
+      }
+    }
+  }
+
   /**
    * Start installation for target
    * @param target - 'openclaw' or 'nemoclaw'
@@ -326,15 +360,21 @@ Then restart Electron.`
   /**
    * Cancel installation and rollback artifacts (D-14, D-15)
    */
-  async cancel(): Promise<{ removed: string[] }> {
+  async cancel(): Promise<{ removed: string[]; errors?: string[] }> {
     this.cancelled = true;
     console.info('[install] Cancel requested');
     await cancelActiveInstallCommand(this.correlationId ?? undefined);
     const removed = await rollbackService.rollback();
+    const errors: string[] = [];
+    this.cleanupScopedSecrets({
+      errors,
+      reason: 'cancel',
+    });
 
     // Run potentially long external uninstall operations in background so cancel returns quickly.
     void this.cleanupInstalledBinaries({
       removed,
+      errors,
       reason: 'cancel',
     });
 
@@ -348,7 +388,7 @@ Then restart Electron.`
     });
 
     this.clearStateSafe();
-    return { removed };
+    return errors.length > 0 ? { removed, errors } : { removed };
   }
 
   /**
@@ -357,6 +397,10 @@ Then restart Electron.`
   async uninstallStack(): Promise<{ removed: string[]; errors?: string[] }> {
     const removed: string[] = [];
     const errors: string[] = [];
+    this.cleanupScopedSecrets({
+      errors,
+      reason: 'manual-uninstall',
+    });
     await this.cleanupInstalledBinaries({
       removed,
       errors,

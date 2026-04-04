@@ -38,11 +38,14 @@
   "dependencies": {
     "@fontsource-variable/figtree": "^5.2.10",
     "@fontsource-variable/geist": "^5.2.8",
+    "archiver": "^7.0.1",
     "better-sqlite3": "^12.8.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "electron": "^41.1.1",
+    "electron-log": "^5.4.3",
     "execa": "^9.6.1",
+    "fast-redact": "^3.5.0",
     "framer-motion": "^12.38.0",
     "lucide-react": "^1.7.0",
     "radix-ui": "^1.4.3",
@@ -57,6 +60,7 @@
   "devDependencies": {
     "@jest/globals": "^30.3.0",
     "@tailwindcss/vite": "^4.2.2",
+    "@types/archiver": "^7.0.0",
     "@types/better-sqlite3": "^7.6.13",
     "@types/jest": "^30.0.0",
     "@types/node": "^25.5.0",

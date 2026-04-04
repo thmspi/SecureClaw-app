@@ -9,12 +9,17 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import InlineSupportError, {
+  classifyRuntimeStringError,
+} from '@/components/management/InlineSupportError';
+import type { SupportErrorEnvelope } from '../../../shared/diagnostics/diagnostics-contracts';
 import { useManagementStore } from '@/stores/management-store';
 
 export default function SessionControl() {
   const { activeSessions, sessionStarting, sessionStopping, startSession, stopSession } = useManagementStore();
   const [showStopDialog, setShowStopDialog] = useState(false);
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
+  const [sessionError, setSessionError] = useState<SupportErrorEnvelope | null>(null);
 
   const activeSession = activeSessions[0];
   const hasActiveSession = Boolean(activeSession);
@@ -23,8 +28,10 @@ export default function SessionControl() {
     const sessionId = crypto.randomUUID();
     const result = await startSession(sessionId);
     if (!result.started && result.error) {
-      console.error('Failed to start session:', result.error);
+      setSessionError(classifyRuntimeStringError(result.error, 'start a runtime session'));
+      return;
     }
+    setSessionError(null);
   };
 
   const handleStopClick = (sessionId: string) => {
@@ -36,11 +43,27 @@ export default function SessionControl() {
     if (selectedSessionId) {
       const result = await stopSession(selectedSessionId);
       if (!result.stopped && result.error) {
-        console.error('Failed to stop session:', result.error);
+        setSessionError(classifyRuntimeStringError(result.error, 'stop the runtime session'));
+      } else {
+        setSessionError(null);
       }
     }
     setShowStopDialog(false);
     setSelectedSessionId(null);
+  };
+
+  const handleRetry = async () => {
+    if (hasActiveSession && activeSession) {
+      const result = await stopSession(activeSession.sessionId);
+      if (!result.stopped && result.error) {
+        setSessionError(classifyRuntimeStringError(result.error, 'stop the runtime session'));
+        return;
+      }
+      setSessionError(null);
+      return;
+    }
+
+    await handleStartSession();
   };
 
   const getSessionStateBadge = () => {
@@ -61,6 +84,14 @@ export default function SessionControl() {
 
   return (
     <div className="space-y-4">
+      {sessionError && (
+        <InlineSupportError
+          title="Session Control Error"
+          error={sessionError}
+          onRetry={sessionError.retryable ? () => void handleRetry() : undefined}
+        />
+      )}
+
       <div className="flex items-start justify-between gap-4">
         <div className="space-y-1">
           {getSessionStateBadge()}

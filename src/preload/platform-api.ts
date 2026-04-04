@@ -2,6 +2,11 @@ import { contextBridge, ipcRenderer } from 'electron';
 import { PLATFORM_CHANNELS } from '../shared/ipc/platform-channels';
 import { INSTALL_CHANNELS } from '../shared/install/install-channels';
 import { RUNTIME_CHANNELS } from '../shared/ipc/runtime-channels';
+import {
+  DIAGNOSTICS_CHANNELS,
+  type GetHealthInput,
+} from '../shared/ipc/diagnostics-channels';
+import { SECURITY_CHANNELS } from '../shared/ipc/security-channels';
 import type {
   RunProcessRequest,
   RunProcessResponse,
@@ -44,6 +49,21 @@ import type {
   UninstallPluginPackageRequest,
   UninstallPluginPackageResponse,
 } from '../shared/runtime/runtime-contracts';
+import type {
+  DiagnosticsExportResult,
+  HealthSnapshot,
+  SupportErrorEnvelope,
+} from '../shared/diagnostics/diagnostics-contracts';
+import type {
+  DeleteScopeSecretsRequest,
+  DeleteScopeSecretsResponse,
+  DeleteSecretRequest,
+  DeleteSecretResponse,
+  GetSecretRequest,
+  GetSecretResponse,
+  SetSecretRequest,
+  SetSecretResponse,
+} from '../shared/security/secret-contracts';
 
 // Narrow platform API - only approved operations
 const platformAPI = {
@@ -162,11 +182,50 @@ const runtimeAPI = {
   },
 };
 
+type DiagnosticsGetHealthResponse = {
+  snapshot?: HealthSnapshot;
+  error?: SupportErrorEnvelope;
+};
+
+type DiagnosticsExportBundleRequest = {
+  includeDays?: number;
+};
+
+const diagnosticsAPI = {
+  getHealth: (
+    request: GetHealthInput = {}
+  ): Promise<DiagnosticsGetHealthResponse> =>
+    ipcRenderer.invoke(DIAGNOSTICS_CHANNELS.getHealth, request),
+
+  exportBundle: (
+    request: DiagnosticsExportBundleRequest = {}
+  ): Promise<DiagnosticsExportResult> =>
+    ipcRenderer.invoke(DIAGNOSTICS_CHANNELS.exportBundle, request),
+};
+
+const secretsAPI = {
+  setSecret: (request: SetSecretRequest): Promise<SetSecretResponse> =>
+    ipcRenderer.invoke(SECURITY_CHANNELS.set, request),
+
+  getSecret: (request: GetSecretRequest): Promise<GetSecretResponse> =>
+    ipcRenderer.invoke(SECURITY_CHANNELS.get, request),
+
+  deleteSecret: (request: DeleteSecretRequest): Promise<DeleteSecretResponse> =>
+    ipcRenderer.invoke(SECURITY_CHANNELS.delete, request),
+
+  deleteScopeSecrets: (
+    request: DeleteScopeSecretsRequest
+  ): Promise<DeleteScopeSecretsResponse> =>
+    ipcRenderer.invoke(SECURITY_CHANNELS.deleteScope, request),
+};
+
 // Expose to renderer via contextBridge - NO raw ipcRenderer
 contextBridge.exposeInMainWorld('secureClaw', {
   platform: platformAPI,
   install: installAPI,
   runtime: runtimeAPI,
+  diagnostics: diagnosticsAPI,
+  secrets: secretsAPI,
 });
 
 // Type declaration for renderer usage
@@ -176,6 +235,8 @@ declare global {
       platform: typeof platformAPI;
       install: typeof installAPI;
       runtime: typeof runtimeAPI;
+      diagnostics: typeof diagnosticsAPI;
+      secrets: typeof secretsAPI;
     };
   }
 }

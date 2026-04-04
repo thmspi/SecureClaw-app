@@ -2,11 +2,13 @@ import { app, BrowserWindow, ipcMain } from 'electron';
 import path from 'path';
 import { registerInstallHandlers } from './ipc/install-router';
 import { registerPlatformHandlers } from './ipc/platform-router';
+import * as diagnosticsRouter from './ipc/diagnostics-router';
 import {
   registerRuntimeHandlers,
   setMainWindow as setRuntimeMainWindow,
   initializeRuntimeHistoryTracking,
 } from './ipc/runtime-router';
+import * as securityRouter from './ipc/security-router';
 import { installOrchestrator } from './install/install-orchestrator';
 
 const devServerUrl = process.env.VITE_DEV_SERVER_URL;
@@ -58,6 +60,8 @@ function registerIpcHandlers(mainWindow: BrowserWindow): void {
 
   registerPlatformHandlers(ipcMain);
   registerRuntimeHandlers(ipcMain);
+  diagnosticsRouter.registerDiagnosticsHandlers(ipcMain);
+  securityRouter.registerSecurityHandlers(ipcMain);
   registerInstallHandlers(ipcMain, mainWindow);
   initializeRuntimeHistoryTracking();
   setRuntimeMainWindow(mainWindow);
