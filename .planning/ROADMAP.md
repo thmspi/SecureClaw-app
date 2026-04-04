@@ -16,6 +16,8 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [ ] **Phase 2: Guided Setup and Install Flows** - Deliver no-terminal onboarding with prerequisite checks and resilient install lifecycle.
 - [x] **Phase 3: Managed Session and Plugin Runtime** - Deliver day-to-day start/stop/plugin operations with persistent runtime history.
 - [ ] **Phase 4: Diagnostics, Security Storage, and macOS Distribution Baseline** - Deliver support clarity, health visibility, secure local secret handling, and signed macOS packaging.
+- [ ] **Phase 5: Configuration Tab Editors (NemoClaw Policy + OpenClaw Skills/Rules)** - Deliver dual-mode configuration management (visual + raw) for sandbox policy, skills, and agent rules.
+- [ ] **Phase 6: Visually Impacting Landing Page** - Deliver a polished, conversion-focused landing experience for SecureClaw.
 
 ## Phase Details
 
@@ -89,7 +91,7 @@ Plans:
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 -> 1.1 -> 2 -> 2.1 -> 3 -> 3.1 -> 4
+Phases execute in numeric order: 1 -> 1.1 -> 2 -> 2.1 -> 3 -> 3.1 -> 4 -> 5 -> 6
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -97,3 +99,27 @@ Phases execute in numeric order: 1 -> 1.1 -> 2 -> 2.1 -> 3 -> 3.1 -> 4
 | 2. Guided Setup and Install Flows | 0/TBD | Not started | - |
 | 3. Managed Session and Plugin Runtime | 4/4 | Complete | 2026-04-03 |
 | 4. Diagnostics, Security Storage, and macOS Distribution Baseline | 2/5 | In Progress | - |
+| 5. Configuration Tab Editors (NemoClaw Policy + OpenClaw Skills/Rules) | 0/4 | Planned | - |
+
+### Phase 5: I need to populate my configuration tab with multiple things : 1) Nemoclaw sand box policy, with a visual editor and the direct yaml editor 2) Available skills (visual editor and markdown editor) 3) Exact same for agent, rules, ... for openclaw llm
+
+**Goal:** User can configure NemoClaw sandbox policy, OpenClaw available skills, and OpenClaw agent rules directly in SecureClaw using either visual editors or raw text editors with safe validation/apply workflows.
+**Requirements**: CFG-01, CFG-02, CFG-03, CFG-04
+**Depends on:** Phase 4
+**Plans:** 4 plans
+
+Plans:
+- [ ] 05-01-PLAN.md — Establish configuration contracts, IPC channels, router wiring, and preload bridge foundation.
+- [ ] 05-02-PLAN.md — Implement NemoClaw sandbox policy YAML adapter with static/dynamic apply semantics.
+- [ ] 05-03-PLAN.md — Implement OpenClaw skills and agent-rules markdown/frontmatter adapter.
+- [ ] 05-04-PLAN.md — Deliver Configuration tab store/UI with visual + raw editors and validate/save/apply actions.
+
+### Phase 6: Create a visually impacting and selling landing page
+
+**Goal:** [To be planned]
+**Requirements**: TBD
+**Depends on:** Phase 5
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 6 to break down)

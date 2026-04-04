@@ -41,6 +41,13 @@ Requirements for initial macOS release with Windows compatibility built into arc
 - [ ] **SEC-02**: Renderer process has no direct privileged system access; all privileged actions are mediated via typed IPC.
 - [x] **SEC-03**: macOS packaged app supports signed distribution for enterprise-safe deployment baseline.
 
+### Configuration Authoring
+
+- [ ] **CFG-01**: Configuration tab exposes editable surfaces for NemoClaw sandbox policy, OpenClaw skills, and OpenClaw agent rules.
+- [ ] **CFG-02**: Each configuration surface supports both a visual editor and a raw text editor mode.
+- [ ] **CFG-03**: Configuration reads/writes/validation/apply flows execute through typed IPC contracts with parser-based validation.
+- [ ] **CFG-04**: Configuration UI surfaces explicit unavailable-state guidance when required CLIs or workspace paths are missing.
+
 ## v2 Requirements
 
 Deferred to future release (after macOS v1 validation).
@@ -92,10 +99,14 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SEC-01 | Phase 4 | Complete |
 | SEC-02 | Phase 1 | Pending |
 | SEC-03 | Phase 4 | Complete |
+| CFG-01 | Phase 5 | Pending |
+| CFG-02 | Phase 5 | Pending |
+| CFG-03 | Phase 5 | Pending |
+| CFG-04 | Phase 5 | Pending |
 
 **Coverage:**
-- v1 requirements: 19 total
-- Mapped to phases: 19
+- v1 requirements: 23 total
+- Mapped to phases: 23
 - Unmapped: 0
 
 ---
