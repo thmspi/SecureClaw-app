@@ -1,5 +1,9 @@
 import Database from 'better-sqlite3';
 
+const mockSecretStore = {
+  deleteScope: jest.fn(),
+};
+
 // Mock electron
 const mockWebContents = {
   send: jest.fn(),
@@ -15,12 +19,19 @@ jest.mock('electron', () => ({
   BrowserWindow: jest.fn(),
 }));
 
+jest.mock('../../security/secret-store-service', () => mockSecretStore);
+
 // Create test database and inject it
 let testDb: Database.Database;
 
 beforeEach(async () => {
   jest.resetModules();
   jest.clearAllMocks();
+  mockSecretStore.deleteScope.mockReturnValue({
+    success: true,
+    secureStorageAvailable: true,
+    deletedCount: 0,
+  });
 
   // Create in-memory database
   testDb = new Database(':memory:');
@@ -126,6 +137,67 @@ describe('InstallOrchestrator', () => {
 
       const state = loadInstallState();
       expect(state).toBeNull();
+    });
+
+    it('should cleanup install/runtime/plugin/support secret scopes before cancel returns', async () => {
+      const { installOrchestrator } = await import('../install-orchestrator');
+
+      await installOrchestrator.cancel();
+
+      expect(mockSecretStore.deleteScope).toHaveBeenCalledWith({ scope: 'install' });
+      expect(mockSecretStore.deleteScope).toHaveBeenCalledWith({ scope: 'runtime' });
+      expect(mockSecretStore.deleteScope).toHaveBeenCalledWith({ scope: 'plugin' });
+      expect(mockSecretStore.deleteScope).toHaveBeenCalledWith({ scope: 'support' });
+    });
+  });
+
+  describe('uninstallStack', () => {
+    it('should cleanup install/runtime/plugin/support secret scopes', async () => {
+      const { installOrchestrator } = await import('../install-orchestrator');
+
+      await installOrchestrator.uninstallStack();
+
+      expect(mockSecretStore.deleteScope).toHaveBeenCalledWith({ scope: 'install' });
+      expect(mockSecretStore.deleteScope).toHaveBeenCalledWith({ scope: 'runtime' });
+      expect(mockSecretStore.deleteScope).toHaveBeenCalledWith({ scope: 'plugin' });
+      expect(mockSecretStore.deleteScope).toHaveBeenCalledWith({ scope: 'support' });
+    });
+
+    it('adds warning strings to errors when secret cleanup fails and logs technical details', async () => {
+      const { installOrchestrator } = await import('../install-orchestrator');
+      const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => undefined);
+      mockSecretStore.deleteScope.mockImplementation((request: { scope: string }) => {
+        if (request.scope === 'support') {
+          return {
+            success: false,
+            secureStorageAvailable: false,
+            deletedCount: 0,
+            error: {
+              userMessage: 'Secure storage unavailable',
+              nextSteps: ['Unlock macOS Keychain'],
+              retryable: false,
+              errorCode: 'SECURE_STORAGE_UNAVAILABLE',
+              technicalDetails: 'keychain permission denied',
+            },
+          };
+        }
+
+        return {
+          success: true,
+          secureStorageAvailable: true,
+          deletedCount: 1,
+        };
+      });
+
+      const result = await installOrchestrator.uninstallStack();
+      expect(result.errors?.join(' ')).toContain('secureclaw:support:');
+      expect(result.errors?.join(' ')).toContain('Secure storage unavailable');
+      expect(warnSpy).toHaveBeenCalledWith(
+        expect.stringContaining('keychain permission denied'),
+        expect.anything()
+      );
+
+      warnSpy.mockRestore();
     });
   });
 
