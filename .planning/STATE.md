@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
-stopped_at: Completed 05-02-PLAN.md
-last_updated: "2026-04-05T09:38:24.904Z"
+status: verifying
+stopped_at: Completed 05-04-PLAN.md
+last_updated: "2026-04-05T09:53:26.780Z"
 last_activity: 2026-04-05
 progress:
   total_phases: 6
-  completed_phases: 4
+  completed_phases: 5
   total_plans: 19
-  completed_plans: 18
+  completed_plans: 19
   percent: 80
 ---
 
@@ -28,7 +28,7 @@ See: `.planning/PROJECT.md` (updated 2026-03-31)
 Phase: 05 (i-need-to-populate-my-configuration-tab-with-multiple-things-1-nemoclaw-sand-box-policy-with-a-visual-editor-and-the-direct-yaml-editor-2-available-skills-visual-editor-and-markdown-editor-3-exact-same-for-agent-rules-for-openclaw-llm) — EXECUTING
 Plan: 4 of 4
 Next Phase: 04 (diagnostics-security-storage-and-macos-distribution-baseline)
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-04-05
 
 Progress: [████████░░] 80%
@@ -65,6 +65,7 @@ Progress: [████████░░] 80%
 | Phase 05 P01 | 7 min | 2 tasks | 13 files |
 | Phase 05 P03 | 7 min | 2 tasks | 2 files |
 | Phase 05 P02 | 4 min | 2 tasks | 2 files |
+| Phase 05 P04 | 11 min | 3 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -97,6 +98,9 @@ Recent decisions affecting current work:
 - [Phase 05]: Keep Phase 5 adapters as deterministic CONFIG_NOT_IMPLEMENTED stubs while locking stable service/router interfaces.
 - [Phase 05]: Expose createNemoClawPolicyAdapter(deps) for testability while preserving production singleton export.
 - [Phase 05]: Map static apply to nemoclaw onboard and dynamic apply to openshell policy set <policyPath> with command availability checks.
+- [Phase 05]: Keep configuration drafts in a dedicated non-persistent store separate from management runtime state.
+- [Phase 05]: Use Monaco raw editing plus RJSF NemoClaw visual editing and markdown frontmatter/sections visual mapping in one panel.
+- [Phase 05]: Load configuration documents lazily when the configuration tab is first opened during the management page mount.
 
 ### Roadmap Evolution
 
@@ -113,7 +117,7 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-05T09:38:24.899Z
-Stopped at: Completed 05-02-PLAN.md
+Last session: 2026-04-05T09:53:26.774Z
+Stopped at: Completed 05-04-PLAN.md
 Resume file: None
 Resume hint: Run /gsd-plan-phase 4 to start Phase 4 planning

@@ -44,7 +44,7 @@ Requirements for initial macOS release with Windows compatibility built into arc
 ### Configuration Authoring
 
 - [x] **CFG-01**: Configuration tab exposes editable surfaces for NemoClaw sandbox policy, OpenClaw skills, and OpenClaw agent rules.
-- [ ] **CFG-02**: Each configuration surface supports both a visual editor and a raw text editor mode.
+- [x] **CFG-02**: Each configuration surface supports both a visual editor and a raw text editor mode.
 - [x] **CFG-03**: Configuration reads/writes/validation/apply flows execute through typed IPC contracts with parser-based validation.
 - [x] **CFG-04**: Configuration UI surfaces explicit unavailable-state guidance when required CLIs or workspace paths are missing.
 
@@ -100,7 +100,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SEC-02 | Phase 1 | Pending |
 | SEC-03 | Phase 4 | Complete |
 | CFG-01 | Phase 5 | Complete |
-| CFG-02 | Phase 5 | Pending |
+| CFG-02 | Phase 5 | Complete |
 | CFG-03 | Phase 5 | Complete |
 | CFG-04 | Phase 5 | Complete |
 
