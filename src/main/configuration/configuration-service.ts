@@ -3,6 +3,8 @@ import type {
   ApplyDocumentResponse,
   ConfigurationDocumentSummary,
   ConfigurationOperationError,
+  DeleteDocumentRequest,
+  DeleteDocumentResponse,
   ListDocumentsRequest,
   ListDocumentsResponse,
   LoadDocumentRequest,
@@ -20,6 +22,7 @@ interface ConfigurationDocumentAdapter {
   loadDocument: (request: LoadDocumentRequest) => Promise<LoadDocumentResponse>;
   validateDocument: (request: ValidateDocumentRequest) => Promise<ValidateDocumentResponse>;
   saveDocument: (request: SaveDocumentRequest) => Promise<SaveDocumentResponse>;
+  deleteDocument: (request: DeleteDocumentRequest) => Promise<DeleteDocumentResponse>;
   applyDocument: (request: ApplyDocumentRequest) => Promise<ApplyDocumentResponse>;
 }
 
@@ -28,16 +31,7 @@ const adapters: ConfigurationDocumentAdapter[] = [
   openclawWorkspaceDocumentAdapter,
 ];
 
-const documentSummaries: ConfigurationDocumentSummary[] = [];
-const adaptersByDocumentId = new Map<string, ConfigurationDocumentAdapter>();
-
-for (const adapter of adapters) {
-  const summaries = adapter.listDocuments();
-  for (const summary of summaries) {
-    documentSummaries.push(summary);
-    adaptersByDocumentId.set(summary.documentId, adapter);
-  }
-}
+const WORKSPACE_DOCUMENT_PREFIXES = ['openclaw-skill:', 'openclaw-agent-rules:'] as const;
 
 function buildNotFoundError(documentId: string): ConfigurationOperationError {
   return {
@@ -46,21 +40,50 @@ function buildNotFoundError(documentId: string): ConfigurationOperationError {
   };
 }
 
+function getDocumentSummaries(): ConfigurationDocumentSummary[] {
+  const summaries: ConfigurationDocumentSummary[] = [];
+  for (const adapter of adapters) {
+    summaries.push(...adapter.listDocuments());
+  }
+  return summaries;
+}
+
+function resolveAdapterByDocumentId(documentId: string): ConfigurationDocumentAdapter | undefined {
+  if (documentId === 'nemoclaw-policy') {
+    return nemoclawPolicyDocumentAdapter;
+  }
+
+  if (WORKSPACE_DOCUMENT_PREFIXES.some((prefix) => documentId.startsWith(prefix))) {
+    return openclawWorkspaceDocumentAdapter;
+  }
+
+  for (const adapter of adapters) {
+    const hasDocument = adapter.listDocuments().some((summary) => summary.documentId === documentId);
+    if (hasDocument) {
+      return adapter;
+    }
+  }
+
+  return undefined;
+}
+
 export const configurationService = {
   async listDocuments(request: ListDocumentsRequest = {}): Promise<ListDocumentsResponse> {
+    const summaries = getDocumentSummaries();
+
     if (!request.kinds || request.kinds.length === 0) {
       return {
-        documents: documentSummaries,
+        documents: summaries,
       };
     }
 
     return {
-      documents: documentSummaries.filter((summary) => request.kinds?.includes(summary.kind)),
+      documents: summaries.filter((summary) => request.kinds?.includes(summary.kind)),
     };
   },
 
   async loadDocument(request: LoadDocumentRequest): Promise<LoadDocumentResponse> {
-    const adapter = adaptersByDocumentId.get(request.documentId);
+    const adapter = resolveAdapterByDocumentId(request.documentId);
     if (!adapter) {
       return {
         error: buildNotFoundError(request.documentId),
@@ -72,7 +95,7 @@ export const configurationService = {
 
   async validateDocument(request: ValidateDocumentRequest): Promise<ValidateDocumentResponse> {
     const documentId = request.document.documentId;
-    const adapter = adaptersByDocumentId.get(documentId);
+    const adapter = resolveAdapterByDocumentId(documentId);
     if (!adapter) {
       return {
         valid: false,
@@ -86,7 +109,7 @@ export const configurationService = {
 
   async saveDocument(request: SaveDocumentRequest): Promise<SaveDocumentResponse> {
     const documentId = request.document.documentId;
-    const adapter = adaptersByDocumentId.get(documentId);
+    const adapter = resolveAdapterByDocumentId(documentId);
     if (!adapter) {
       return {
         saved: false,
@@ -97,8 +120,20 @@ export const configurationService = {
     return adapter.saveDocument(request);
   },
 
+  async deleteDocument(request: DeleteDocumentRequest): Promise<DeleteDocumentResponse> {
+    const adapter = resolveAdapterByDocumentId(request.documentId);
+    if (!adapter) {
+      return {
+        deleted: false,
+        error: buildNotFoundError(request.documentId),
+      };
+    }
+
+    return adapter.deleteDocument(request);
+  },
+
   async applyDocument(request: ApplyDocumentRequest): Promise<ApplyDocumentResponse> {
-    const adapter = adaptersByDocumentId.get(request.documentId);
+    const adapter = resolveAdapterByDocumentId(request.documentId);
     if (!adapter) {
       return {
         applied: false,

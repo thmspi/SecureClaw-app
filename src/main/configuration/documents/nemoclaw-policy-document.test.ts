@@ -21,6 +21,7 @@ const createAdapter = () => {
     commandExists: jest.fn().mockResolvedValue(true),
     runCommand: jest.fn().mockResolvedValue({ exitCode: 0, stdout: '', stderr: '' }),
     nowIso: () => '2026-04-05T00:00:00.000Z',
+    isDevInstallSimulationEnabled: jest.fn().mockReturnValue(false),
   };
 
   return {
@@ -44,6 +45,16 @@ describe('createNemoClawPolicyAdapter', () => {
       content: 'sandbox:\n  mode: strict\n',
     });
     expect(adapter.listDocuments()[0]?.path).toBe(DEFAULT_POLICY_PATH);
+  });
+
+  it('returns a default editable policy document when policy file is missing', async () => {
+    const { adapter, deps } = createAdapter();
+    deps.readFile.mockRejectedValue(Object.assign(new Error('not found'), { code: 'ENOENT' }));
+
+    const response = await adapter.loadDocument({ documentId: 'nemoclaw-policy' } as any);
+
+    expect(response.error).toBeUndefined();
+    expect(response.document?.content).toContain('network_policies');
   });
 
   it('returns valid=false with parser issue line/column on YAML parse errors', async () => {
@@ -109,5 +120,23 @@ describe('createNemoClawPolicyAdapter', () => {
       },
     });
     expect((dynamicResponse.error as any).nextSteps[0]).toContain('Install NemoClaw/OpenShell CLI');
+  });
+
+  it('simulates apply success in dev install simulation mode', async () => {
+    const { adapter, deps } = createAdapter();
+    deps.commandExists.mockResolvedValue(false);
+    deps.isDevInstallSimulationEnabled.mockReturnValue(true);
+
+    const response = await adapter.applyDocument({
+      documentId: 'nemoclaw-policy',
+      applyMode: 'dynamic',
+    } as any);
+
+    expect(response).toMatchObject({
+      applied: true,
+      issues: [],
+    });
+    expect(deps.commandExists).not.toHaveBeenCalled();
+    expect(deps.runCommand).not.toHaveBeenCalled();
   });
 });

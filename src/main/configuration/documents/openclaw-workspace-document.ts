@@ -1,5 +1,5 @@
 import { existsSync, readdirSync } from 'node:fs';
-import { readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, unlink, writeFile } from 'node:fs/promises';
 import { homedir as osHomedir } from 'node:os';
 import path from 'node:path';
 import matter from 'gray-matter';
@@ -11,6 +11,8 @@ import type {
   ConfigurationDocumentPayload,
   ConfigurationValidationIssue,
   ConfigurationOperationError,
+  DeleteDocumentRequest,
+  DeleteDocumentResponse,
   LoadDocumentRequest,
   LoadDocumentResponse,
   SaveDocumentRequest,
@@ -22,9 +24,12 @@ import type {
 const OPENCLAW_SKILL_GLOBAL_PREFIX = 'openclaw-skill:global:';
 const OPENCLAW_SKILL_WORKSPACE_PREFIX = 'openclaw-skill:workspace:';
 const OPENCLAW_AGENT_RULES_WORKSPACE_DOCUMENT_ID = 'openclaw-agent-rules:workspace';
+const OPENCLAW_AGENT_RULES_WORKSPACE_PREFIX = 'openclaw-agent-rules:workspace:';
+const OPENCLAW_AGENT_RULES_DIRECTORY = 'agents';
 
 const CONFIG_PATH_UNAVAILABLE = 'CONFIG_PATH_UNAVAILABLE';
 const CONFIG_VALIDATION_FAILED = 'CONFIG_VALIDATION_FAILED';
+const DEFAULT_AGENT_RULES_MARKDOWN = ['## Rules', '', '- Add rule details here.', ''].join('\n');
 
 interface WorkspaceFsDeps {
   existsSync: (targetPath: string) => boolean;
@@ -34,6 +39,8 @@ interface WorkspaceFsDeps {
   }>;
   readFile: (targetPath: string, encoding: BufferEncoding) => Promise<string>;
   writeFile: (targetPath: string, content: string, encoding: BufferEncoding) => Promise<void>;
+  mkdir: (targetPath: string, options: { recursive: true }) => Promise<unknown>;
+  unlink: (targetPath: string) => Promise<void>;
 }
 
 interface OpenClawWorkspaceAdapterDeps {
@@ -61,6 +68,8 @@ const DEFAULT_FS_DEPS: WorkspaceFsDeps = {
   readdirSync,
   readFile,
   writeFile,
+  mkdir,
+  unlink,
 };
 
 const createPathUnavailableError = (missingPath: string): ConfigurationOperationError => ({
@@ -76,9 +85,13 @@ const createValidationIssue = (message: string, pathValue: string): Configuratio
 });
 
 const readFrontmatter = (content: string): Record<string, unknown> => {
-  const parsed = matter(content);
-  if (parsed.data && typeof parsed.data === 'object' && !Array.isArray(parsed.data)) {
-    return parsed.data as Record<string, unknown>;
+  try {
+    const parsed = matter(content);
+    if (parsed.data && typeof parsed.data === 'object' && !Array.isArray(parsed.data)) {
+      return parsed.data as Record<string, unknown>;
+    }
+  } catch {
+    return {};
   }
 
   return {};
@@ -193,6 +206,20 @@ const resolveDocumentTarget = (documentId: string, paths: ResolvedPaths): Resolv
     };
   }
 
+  if (documentId.startsWith(OPENCLAW_AGENT_RULES_WORKSPACE_PREFIX)) {
+    const fileStem = documentId.slice(OPENCLAW_AGENT_RULES_WORKSPACE_PREFIX.length);
+    if (!fileStem) {
+      return undefined;
+    }
+
+    return {
+      kind: 'openclaw-agent-rules',
+      path: path.join(paths.workspaceRoot, OPENCLAW_AGENT_RULES_DIRECTORY, `${fileStem}.md`),
+      requiresWorkspace: true,
+      workspaceRoot: paths.workspaceRoot,
+    };
+  }
+
   return undefined;
 };
 
@@ -218,6 +245,40 @@ const discoverSkills = (rootPath: string, prefix: string, fsDeps: WorkspaceFsDep
       description: 'Edit OpenClaw skill metadata and markdown instructions.',
       path: path.join(rootPath, skillFolder, 'SKILL.md'),
     }));
+  } catch {
+    return [];
+  }
+};
+
+const discoverAgentRuleFiles = (
+  rootPath: string,
+  prefix: string,
+  fsDeps: WorkspaceFsDeps
+): ConfigurationDocumentSummary[] => {
+  if (!fsDeps.existsSync(rootPath)) {
+    return [];
+  }
+
+  try {
+    const files = fsDeps
+      .readdirSync(rootPath, { withFileTypes: true })
+      .filter((entry) => !entry.isDirectory())
+      .map((entry) => entry.name)
+      .filter((entry) => entry.toLowerCase().endsWith('.md'))
+      .sort((left, right) => left.localeCompare(right));
+
+    return files.map((fileName) => {
+      const fileStem = fileName.slice(0, -3);
+      return {
+        documentId: `${prefix}${fileStem}`,
+        displayName: fileStem,
+        kind: 'openclaw-agent-rules' as const,
+        format: 'markdown' as const,
+        editorModes: ['visual', 'raw'] as const,
+        description: 'Workspace agent rules file.',
+        path: path.join(rootPath, fileName),
+      };
+    });
   } catch {
     return [];
   }
@@ -271,12 +332,60 @@ const createNotFoundError = (documentId: string): ConfigurationOperationError =>
   userMessage: `Configuration document "${documentId}" was not found.`,
 });
 
+const buildLoadError = (targetPath: string, error: unknown): ConfigurationOperationError => ({
+  errorCode: 'CONFIG_DOCUMENT_READ_FAILED',
+  userMessage: `Unable to load configuration document from "${targetPath}".`,
+  technicalDetails: error instanceof Error ? error.message : String(error),
+  retryable: true,
+});
+
+const buildSaveError = (targetPath: string, error: unknown): ConfigurationOperationError => ({
+  errorCode: 'CONFIG_DOCUMENT_SAVE_FAILED',
+  userMessage: `Unable to save configuration document to "${targetPath}".`,
+  technicalDetails: error instanceof Error ? error.message : String(error),
+  retryable: true,
+});
+
+const buildDeleteError = (targetPath: string, error: unknown): ConfigurationOperationError => ({
+  errorCode: 'CONFIG_DOCUMENT_DELETE_FAILED',
+  userMessage: `Unable to remove configuration document at "${targetPath}".`,
+  technicalDetails: error instanceof Error ? error.message : String(error),
+  retryable: true,
+});
+
+const buildDeleteNotSupportedError = (documentId: string): ConfigurationOperationError => ({
+  errorCode: 'CONFIG_DOCUMENT_DELETE_NOT_SUPPORTED',
+  userMessage: `Configuration document "${documentId}" cannot be removed from this panel.`,
+  retryable: false,
+});
+
+const isMissingFileError = (error: unknown): boolean => {
+  if (!(error instanceof Error)) {
+    return false;
+  }
+  const withCode = error as NodeJS.ErrnoException;
+  return withCode.code === 'ENOENT';
+};
+
+const isRemovableDocumentId = (documentId: string): boolean =>
+  documentId.startsWith(OPENCLAW_SKILL_WORKSPACE_PREFIX) ||
+  documentId.startsWith(OPENCLAW_AGENT_RULES_WORKSPACE_PREFIX);
+
 const ensurePathAvailability = (
   target: ResolvedDocumentTarget,
-  fsDeps: WorkspaceFsDeps
+  fsDeps: WorkspaceFsDeps,
+  options: { requireExistingFile?: boolean; requireExistingWorkspace?: boolean } = {}
 ): ConfigurationOperationError | undefined => {
-  if (target.requiresWorkspace && !fsDeps.existsSync(target.workspaceRoot)) {
+  if (
+    target.requiresWorkspace &&
+    options.requireExistingWorkspace !== false &&
+    !fsDeps.existsSync(target.workspaceRoot)
+  ) {
     return createPathUnavailableError(target.workspaceRoot);
+  }
+
+  if (options.requireExistingFile === false) {
+    return undefined;
   }
 
   if (!fsDeps.existsSync(target.path)) {
@@ -307,8 +416,12 @@ const serializeSkillContent = (document: ConfigurationDocumentPayload): string =
     }
   }
 
-  const parsed = matter(document.content);
-  return matter.stringify(parsed.content, parsed.data);
+  try {
+    const parsed = matter(document.content);
+    return matter.stringify(parsed.content, parsed.data);
+  } catch {
+    return document.content;
+  }
 };
 
 export const createOpenClawWorkspaceAdapter = (deps: OpenClawWorkspaceAdapterDeps = {}) => {
@@ -336,6 +449,11 @@ export const createOpenClawWorkspaceAdapter = (deps: OpenClawWorkspaceAdapterDep
         },
         ...discoverSkills(paths.globalSkillsRoot, OPENCLAW_SKILL_GLOBAL_PREFIX, fsDeps),
         ...discoverSkills(paths.workspaceSkillsRoot, OPENCLAW_SKILL_WORKSPACE_PREFIX, fsDeps),
+        ...discoverAgentRuleFiles(
+          path.join(paths.workspaceRoot, OPENCLAW_AGENT_RULES_DIRECTORY),
+          OPENCLAW_AGENT_RULES_WORKSPACE_PREFIX,
+          fsDeps
+        ),
       ];
     },
 
@@ -350,36 +468,59 @@ export const createOpenClawWorkspaceAdapter = (deps: OpenClawWorkspaceAdapterDep
 
       const pathError = ensurePathAvailability(target, fsDeps);
       if (pathError) {
+        if (request.documentId === OPENCLAW_AGENT_RULES_WORKSPACE_DOCUMENT_ID) {
+          return {
+            document: {
+              documentId: request.documentId,
+              kind: 'openclaw-agent-rules',
+              format: 'markdown',
+              content: DEFAULT_AGENT_RULES_MARKDOWN,
+              editorMode: 'raw',
+              structuredContent: createStructuredContent(
+                DEFAULT_AGENT_RULES_MARKDOWN,
+                {},
+                DEFAULT_AGENT_RULES_MARKDOWN
+              ),
+            },
+          };
+        }
+
         return {
           error: pathError,
         };
       }
 
-      const rawText = await fsDeps.readFile(target.path, 'utf8');
-      if (target.kind === 'openclaw-skill') {
-        const parsed = matter(rawText);
+      try {
+        const rawText = await fsDeps.readFile(target.path, 'utf8');
+        if (target.kind === 'openclaw-skill') {
+          const parsed = matter(rawText);
+          return {
+            document: {
+              documentId: request.documentId,
+              kind: 'openclaw-skill',
+              format: 'markdown',
+              content: rawText,
+              editorMode: 'raw',
+              structuredContent: createStructuredContent(rawText, readFrontmatter(rawText), parsed.content),
+            },
+          };
+        }
+
         return {
           document: {
             documentId: request.documentId,
-            kind: 'openclaw-skill',
+            kind: 'openclaw-agent-rules',
             format: 'markdown',
             content: rawText,
             editorMode: 'raw',
-            structuredContent: createStructuredContent(rawText, readFrontmatter(rawText), parsed.content),
+            structuredContent: createStructuredContent(rawText, {}, rawText),
           },
         };
+      } catch (error) {
+        return {
+          error: buildLoadError(target.path, error),
+        };
       }
-
-      return {
-        document: {
-          documentId: request.documentId,
-          kind: 'openclaw-agent-rules',
-          format: 'markdown',
-          content: rawText,
-          editorMode: 'raw',
-          structuredContent: createStructuredContent(rawText, {}, rawText),
-        },
-      };
     },
 
     async validateDocument(request: ValidateDocumentRequest): Promise<ValidateDocumentResponse> {
@@ -411,7 +552,10 @@ export const createOpenClawWorkspaceAdapter = (deps: OpenClawWorkspaceAdapterDep
         };
       }
 
-      const pathError = ensurePathAvailability(target, fsDeps);
+      const pathError = ensurePathAvailability(target, fsDeps, {
+        requireExistingFile: false,
+        requireExistingWorkspace: false,
+      });
       if (pathError) {
         return {
           saved: false,
@@ -419,21 +563,81 @@ export const createOpenClawWorkspaceAdapter = (deps: OpenClawWorkspaceAdapterDep
         };
       }
 
-      const contentToWrite =
-        request.document.kind === 'openclaw-skill' ? serializeSkillContent(request.document) : request.document.content;
-      await fsDeps.writeFile(target.path, contentToWrite, 'utf8');
+      try {
+        const contentToWrite =
+          request.document.kind === 'openclaw-skill'
+            ? serializeSkillContent(request.document)
+            : request.document.content;
+        await fsDeps.mkdir(path.dirname(target.path), { recursive: true });
+        await fsDeps.writeFile(target.path, contentToWrite, 'utf8');
 
-      return {
-        saved: true,
-        document: {
-          ...request.document,
-          content: contentToWrite,
-          structuredContent:
-            request.document.kind === 'openclaw-skill'
-              ? createStructuredContent(contentToWrite, readFrontmatter(contentToWrite), matter(contentToWrite).content)
-              : createStructuredContent(contentToWrite, {}, contentToWrite),
-        },
-      };
+        return {
+          saved: true,
+          document: {
+            ...request.document,
+            content: contentToWrite,
+            structuredContent:
+              request.document.kind === 'openclaw-skill'
+                ? createStructuredContent(
+                    contentToWrite,
+                    readFrontmatter(contentToWrite),
+                    matter(contentToWrite).content
+                  )
+                : createStructuredContent(contentToWrite, {}, contentToWrite),
+          },
+        };
+      } catch (error) {
+        return {
+          saved: false,
+          error: buildSaveError(target.path, error),
+        };
+      }
+    },
+
+    async deleteDocument(request: DeleteDocumentRequest): Promise<DeleteDocumentResponse> {
+      if (!isRemovableDocumentId(request.documentId)) {
+        return {
+          deleted: false,
+          error: buildDeleteNotSupportedError(request.documentId),
+        };
+      }
+
+      const paths = resolvePaths(homedirFn, env);
+      const target = resolveDocumentTarget(request.documentId, paths);
+      if (!target) {
+        return {
+          deleted: false,
+          error: createNotFoundError(request.documentId),
+        };
+      }
+
+      const pathError = ensurePathAvailability(target, fsDeps, {
+        requireExistingWorkspace: false,
+      });
+      if (pathError) {
+        return {
+          deleted: false,
+          error: pathError,
+        };
+      }
+
+      try {
+        await fsDeps.unlink(target.path);
+        return {
+          deleted: true,
+        };
+      } catch (error) {
+        if (isMissingFileError(error)) {
+          return {
+            deleted: true,
+          };
+        }
+
+        return {
+          deleted: false,
+          error: buildDeleteError(target.path, error),
+        };
+      }
     },
 
     async applyDocument(request: ApplyDocumentRequest): Promise<ApplyDocumentResponse> {

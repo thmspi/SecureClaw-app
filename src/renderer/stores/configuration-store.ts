@@ -1,11 +1,9 @@
-import matter from 'gray-matter';
 import YAML from 'yaml';
 import { create } from 'zustand';
 
 import type {
   ApplyDocumentRequest,
   ApplyDocumentResponse,
-  ConfigurationDocumentKind,
   ConfigurationDocumentPayload,
   ConfigurationDocumentSummary,
   ConfigurationEditorMode,
@@ -83,44 +81,6 @@ function ensureTrailingNewline(value: string): string {
   return value.endsWith('\n') ? value : `${value}\n`;
 }
 
-function serializeSections(value: unknown): string {
-  if (!Array.isArray(value)) {
-    return '';
-  }
-
-  return value
-    .map((entry) => {
-      if (!isRecord(entry)) {
-        return null;
-      }
-      const heading = typeof entry.heading === 'string' ? entry.heading.trim() : '';
-      const content = typeof entry.content === 'string' ? entry.content.trim() : '';
-      if (!heading) {
-        return null;
-      }
-      return `## ${heading}\n${content}`.trimEnd();
-    })
-    .filter((entry): entry is string => Boolean(entry))
-    .join('\n\n')
-    .trim();
-}
-
-function serializeMarkdownFromVisualModel(
-  kind: ConfigurationDocumentKind,
-  visualModel: Record<string, unknown>,
-  fallbackRawText: string
-): string {
-  const rawBody = serializeSections(visualModel.sections);
-  const body = rawBody || fallbackRawText.trim();
-
-  if (kind === 'openclaw-skill') {
-    const frontmatter = isRecord(visualModel.frontmatter) ? visualModel.frontmatter : {};
-    return matter.stringify(body, frontmatter);
-  }
-
-  return ensureTrailingNewline(body);
-}
-
 function toMarkdownStructuredContent(
   rawText: string,
   visualModel: ConfigurationVisualModel
@@ -167,20 +127,17 @@ function buildDraftDocument(state: ConfigurationDraftState): ConfigurationDocume
     updatedAt: new Date().toISOString(),
   };
 
-  if (state.editorMode === 'visual' && state.visualModel) {
-    if (draft.format === 'yaml') {
-      draft.content = ensureTrailingNewline(YAML.stringify(state.visualModel));
-      draft.structuredContent = state.visualModel;
-      return draft;
+  if (draft.format === 'markdown') {
+    draft.content = state.rawText;
+    if (state.visualModel) {
+      draft.structuredContent = toMarkdownStructuredContent(draft.content, state.visualModel);
     }
-
-    draft.content = serializeMarkdownFromVisualModel(draft.kind, state.visualModel, state.rawText);
-    draft.structuredContent = toMarkdownStructuredContent(draft.content, state.visualModel);
     return draft;
   }
 
-  if (draft.format === 'markdown' && state.visualModel) {
-    draft.structuredContent = toMarkdownStructuredContent(draft.content, state.visualModel);
+  if (state.editorMode === 'visual' && state.visualModel) {
+    draft.content = ensureTrailingNewline(YAML.stringify(state.visualModel));
+    draft.structuredContent = state.visualModel;
   }
 
   return draft;
@@ -385,10 +342,7 @@ export const useConfigurationStore = create<ConfigurationState>()((set, get) => 
 
     set({
       validating: true,
-      validationIssues: [],
       lastError: undefined,
-      activeDocument: draft,
-      rawText: draft.content,
     });
 
     try {

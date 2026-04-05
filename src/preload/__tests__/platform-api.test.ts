@@ -103,6 +103,8 @@ describe('Preload Platform API', () => {
     expect(typeof configurationAPI.validateDocument).toBe('function');
     expect(configurationAPI).toHaveProperty('saveDocument');
     expect(typeof configurationAPI.saveDocument).toBe('function');
+    expect(configurationAPI).toHaveProperty('deleteDocument');
+    expect(typeof configurationAPI.deleteDocument).toBe('function');
     expect(configurationAPI).toHaveProperty('applyDocument');
     expect(typeof configurationAPI.applyDocument).toBe('function');
   });

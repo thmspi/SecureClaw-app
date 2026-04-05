@@ -9,6 +9,8 @@ import type {
   ConfigurationDocumentPayload,
   ConfigurationDocumentSummary,
   ConfigurationOperationError,
+  DeleteDocumentRequest,
+  DeleteDocumentResponse,
   LoadDocumentRequest,
   LoadDocumentResponse,
   SaveDocumentRequest,
@@ -19,6 +21,7 @@ import type {
 
 const NEMOCLAW_POLICY_DOCUMENT_ID = 'nemoclaw-policy';
 const NEMOCLAW_POLICY_RELATIVE_PATH = '.openclaw/openclaw-sandbox.yaml';
+const DEFAULT_NEMOCLAW_POLICY_YAML = ['network_policies: {}', ''].join('\n');
 
 type NemoClawApplyMode = 'static' | 'dynamic';
 
@@ -45,6 +48,7 @@ interface NemoClawPolicyAdapterDeps {
   commandExists: (command: string) => Promise<boolean>;
   runCommand: (argv: string[]) => Promise<CommandResult>;
   nowIso: () => string;
+  isDevInstallSimulationEnabled: () => boolean;
 }
 
 type PolicyPathOverrideRequest = {
@@ -123,6 +127,12 @@ const createDocumentSummary = (policyPath: string): ConfigurationDocumentSummary
   path: policyPath,
 });
 
+const isDevInstallSimulationEnabled = (): boolean => {
+  const flag = process.env.SECURECLAW_DEV_SIMULATE_INSTALL?.trim().toLowerCase();
+  const enabled = flag === '1' || flag === 'true' || flag === 'yes' || flag === 'on';
+  return enabled && process.env.NODE_ENV !== 'production';
+};
+
 const runProcess = (argv: string[]): Promise<CommandResult> =>
   new Promise((resolve, reject) => {
     const [command, ...args] = argv;
@@ -182,6 +192,7 @@ const defaultDeps: NemoClawPolicyAdapterDeps = {
   },
   runCommand: (argv) => runProcess(argv),
   nowIso: () => new Date().toISOString(),
+  isDevInstallSimulationEnabled,
 };
 
 const buildLoadError = (policyPath: string, error: unknown): ConfigurationOperationError => ({
@@ -204,6 +215,14 @@ const buildApplyError = (error: unknown): ConfigurationOperationError => ({
   technicalDetails: error instanceof Error ? error.message : String(error),
   retryable: true,
 });
+
+const isMissingFileError = (error: unknown): boolean => {
+  if (!(error instanceof Error)) {
+    return false;
+  }
+  const withCode = error as NodeJS.ErrnoException;
+  return withCode.code === 'ENOENT';
+};
 
 const buildCommandArguments = (applyMode: NemoClawApplyMode, policyPath: string): string[] =>
   applyMode === 'dynamic'
@@ -255,6 +274,19 @@ export const createNemoClawPolicyAdapter = (
           document: toPayload(content, parsed),
         };
       } catch (error) {
+        if (isMissingFileError(error)) {
+          let parsed: unknown;
+          try {
+            parsed = deps.parseYaml(DEFAULT_NEMOCLAW_POLICY_YAML);
+          } catch {
+            parsed = undefined;
+          }
+
+          return {
+            document: toPayload(DEFAULT_NEMOCLAW_POLICY_YAML, parsed),
+          };
+        }
+
         return {
           error: buildLoadError(policyPath, error),
         };
@@ -297,12 +329,30 @@ export const createNemoClawPolicyAdapter = (
       }
     },
 
+    async deleteDocument(_request: DeleteDocumentRequest): Promise<DeleteDocumentResponse> {
+      return {
+        deleted: false,
+        error: {
+          errorCode: 'CONFIG_DOCUMENT_DELETE_NOT_SUPPORTED',
+          userMessage: 'NemoClaw policy cannot be removed from this panel.',
+          retryable: false,
+        },
+      };
+    },
+
     async applyDocument(request: ApplyDocumentRequest): Promise<ApplyDocumentResponse> {
       const applyRequest = request as ApplyPolicyRequest;
       const applyMode = applyRequest.applyMode ?? 'static';
       const policyPath = resolvePolicyPath(applyRequest, deps);
       const args = buildCommandArguments(applyMode, policyPath);
       const requiredCommand = args[0];
+
+      if (deps.isDevInstallSimulationEnabled()) {
+        return {
+          applied: true,
+          issues: [],
+        };
+      }
 
       if (!(await deps.commandExists(requiredCommand))) {
         return {

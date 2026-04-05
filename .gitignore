@@ -294,3 +294,5 @@ AWS_Icon-package
 
 #VS code settings
 .vscode
+.codex
+copilot-instructions.md

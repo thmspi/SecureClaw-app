@@ -5,6 +5,7 @@ const mockConfigurationService = {
   loadDocument: jest.fn(),
   validateDocument: jest.fn(),
   saveDocument: jest.fn(),
+  deleteDocument: jest.fn(),
   applyDocument: jest.fn(),
 };
 
@@ -46,6 +47,7 @@ describe('configuration-router', () => {
     mockConfigurationService.loadDocument.mockResolvedValue({ document: undefined });
     mockConfigurationService.validateDocument.mockResolvedValue({ valid: true, issues: [] });
     mockConfigurationService.saveDocument.mockResolvedValue({ saved: true, issues: [] });
+    mockConfigurationService.deleteDocument.mockResolvedValue({ deleted: true });
     mockConfigurationService.applyDocument.mockResolvedValue({ applied: true, issues: [] });
   });
 
@@ -60,10 +62,11 @@ describe('configuration-router', () => {
         CONFIGURATION_CHANNELS.loadDocument,
         CONFIGURATION_CHANNELS.validateDocument,
         CONFIGURATION_CHANNELS.saveDocument,
+        CONFIGURATION_CHANNELS.deleteDocument,
         CONFIGURATION_CHANNELS.applyDocument,
       ])
     );
-    expect(new Set(channels).size).toBe(5);
+    expect(new Set(channels).size).toBe(6);
   });
 
   it('validates payloads with zod before dispatching to configuration service', async () => {
@@ -93,12 +96,14 @@ describe('configuration-router', () => {
         },
       })
     ).rejects.toThrow();
+    await expect(callHandler(CONFIGURATION_CHANNELS.deleteDocument, { documentId: '' })).rejects.toThrow();
     await expect(callHandler(CONFIGURATION_CHANNELS.applyDocument, { documentId: '' })).rejects.toThrow();
 
     expect(mockConfigurationService.listDocuments).not.toHaveBeenCalled();
     expect(mockConfigurationService.loadDocument).not.toHaveBeenCalled();
     expect(mockConfigurationService.validateDocument).not.toHaveBeenCalled();
     expect(mockConfigurationService.saveDocument).not.toHaveBeenCalled();
+    expect(mockConfigurationService.deleteDocument).not.toHaveBeenCalled();
     expect(mockConfigurationService.applyDocument).not.toHaveBeenCalled();
   });
 });

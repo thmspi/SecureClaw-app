@@ -79,6 +79,15 @@ export interface SaveDocumentResponse {
   error?: ConfigurationOperationError;
 }
 
+export interface DeleteDocumentRequest {
+  documentId: string;
+}
+
+export interface DeleteDocumentResponse {
+  deleted: boolean;
+  error?: ConfigurationOperationError;
+}
+
 export interface ApplyDocumentRequest {
   documentId: string;
   dryRun?: boolean;

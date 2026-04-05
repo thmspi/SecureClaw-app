@@ -68,6 +68,8 @@ import type {
 import type {
   ApplyDocumentRequest,
   ApplyDocumentResponse,
+  DeleteDocumentRequest,
+  DeleteDocumentResponse,
   ListDocumentsRequest,
   ListDocumentsResponse,
   LoadDocumentRequest,
@@ -248,6 +250,11 @@ const configurationAPI = {
     request: SaveDocumentRequest
   ): Promise<SaveDocumentResponse> =>
     ipcRenderer.invoke(CONFIGURATION_CHANNELS.saveDocument, request),
+
+  deleteDocument: (
+    request: DeleteDocumentRequest
+  ): Promise<DeleteDocumentResponse> =>
+    ipcRenderer.invoke(CONFIGURATION_CHANNELS.deleteDocument, request),
 
   applyDocument: (
     request: ApplyDocumentRequest

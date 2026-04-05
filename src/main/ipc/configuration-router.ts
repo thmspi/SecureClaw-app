@@ -2,6 +2,7 @@ import { ipcMain, IpcMainInvokeEvent } from 'electron';
 import {
   CONFIGURATION_CHANNELS,
   applyDocumentSchema,
+  deleteDocumentSchema,
   listDocumentsSchema,
   loadDocumentSchema,
   saveDocumentSchema,
@@ -10,6 +11,8 @@ import {
 import type {
   ApplyDocumentRequest,
   ApplyDocumentResponse,
+  DeleteDocumentRequest,
+  DeleteDocumentResponse,
   ListDocumentsRequest,
   ListDocumentsResponse,
   LoadDocumentRequest,
@@ -20,8 +23,6 @@ import type {
   ValidateDocumentResponse,
 } from '../../shared/configuration/configuration-contracts';
 import { configurationService } from '../configuration/configuration-service';
-
-const CONFIGURATION_APPLY_DOCUMENT_CHANNEL = 'configuration:v1:applyDocument';
 
 export function registerConfigurationHandlers(ipc: typeof ipcMain): void {
   ipc.handle(
@@ -57,7 +58,15 @@ export function registerConfigurationHandlers(ipc: typeof ipcMain): void {
   );
 
   ipc.handle(
-    CONFIGURATION_APPLY_DOCUMENT_CHANNEL,
+    CONFIGURATION_CHANNELS.deleteDocument,
+    async (_event: IpcMainInvokeEvent, request: unknown): Promise<DeleteDocumentResponse> => {
+      const validatedRequest = deleteDocumentSchema.parse(request) as DeleteDocumentRequest;
+      return configurationService.deleteDocument(validatedRequest);
+    }
+  );
+
+  ipc.handle(
+    CONFIGURATION_CHANNELS.applyDocument,
     async (_event: IpcMainInvokeEvent, request: unknown): Promise<ApplyDocumentResponse> => {
       const validatedRequest = applyDocumentSchema.parse(request) as ApplyDocumentRequest;
       return configurationService.applyDocument(validatedRequest);

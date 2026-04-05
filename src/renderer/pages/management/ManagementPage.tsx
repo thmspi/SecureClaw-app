@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { Component, type ErrorInfo, type ReactNode, useEffect, useRef, useState } from 'react';
 import {
   LayoutDashboard,
   PanelLeft,
@@ -61,7 +61,11 @@ export default function ManagementPage() {
 
   const renderContent = () => {
     if (activeTab === 'configuration') {
-      return <ConfigurationPanel />;
+      return (
+        <ConfigurationErrorBoundary>
+          <ConfigurationPanel />
+        </ConfigurationErrorBoundary>
+      );
     }
 
     if (activeTab === 'settings') {
@@ -153,4 +157,46 @@ export default function ManagementPage() {
       </main>
     </div>
   );
+}
+
+class ConfigurationErrorBoundary extends Component<
+  { children: ReactNode },
+  { error: Error | null }
+> {
+  constructor(props: { children: ReactNode }) {
+    super(props);
+    this.state = { error: null };
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return { error };
+  }
+
+  componentDidCatch(error: Error, info: ErrorInfo): void {
+    console.error('[configuration] panel render error', error, info);
+  }
+
+  render() {
+    if (this.state.error) {
+      return (
+        <Card>
+          <CardHeader>
+            <CardTitle>Configuration Panel Error</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2 text-sm">
+            <p>The configuration panel crashed while rendering.</p>
+            <p className="font-mono text-xs text-destructive">{this.state.error.message}</p>
+            <Button
+              variant="outline"
+              onClick={() => this.setState({ error: null })}
+            >
+              Retry Panel
+            </Button>
+          </CardContent>
+        </Card>
+      );
+    }
+
+    return this.props.children;
+  }
 }

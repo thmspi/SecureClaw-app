@@ -5,6 +5,7 @@ export const CONFIGURATION_CHANNELS = {
   loadDocument: 'configuration:v1:loadDocument',
   validateDocument: 'configuration:v1:validateDocument',
   saveDocument: 'configuration:v1:saveDocument',
+  deleteDocument: 'configuration:v1:deleteDocument',
   applyDocument: 'configuration:v1:applyDocument',
 } as const;
 
@@ -44,6 +45,10 @@ export const saveDocumentSchema = z.object({
   document: configurationDocumentPayloadSchema,
 });
 
+export const deleteDocumentSchema = z.object({
+  documentId: z.string().min(1),
+});
+
 export const applyDocumentSchema = z.object({
   documentId: z.string().min(1),
   dryRun: z.boolean().optional(),
@@ -57,4 +62,5 @@ export type ListDocumentsInput = z.infer<typeof listDocumentsSchema>;
 export type LoadDocumentInput = z.infer<typeof loadDocumentSchema>;
 export type ValidateDocumentInput = z.infer<typeof validateDocumentSchema>;
 export type SaveDocumentInput = z.infer<typeof saveDocumentSchema>;
+export type DeleteDocumentInput = z.infer<typeof deleteDocumentSchema>;
 export type ApplyDocumentInput = z.infer<typeof applyDocumentSchema>;
