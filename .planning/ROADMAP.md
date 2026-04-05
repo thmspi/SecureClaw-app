@@ -110,8 +110,8 @@ Phases execute in numeric order: 1 -> 1.1 -> 2 -> 2.1 -> 3 -> 3.1 -> 4 -> 5 -> 6
 
 Plans:
 - [x] 05-01-PLAN.md — Establish configuration contracts, IPC channels, router wiring, and preload bridge foundation.
-- [ ] 05-02-PLAN.md — Implement NemoClaw sandbox policy YAML adapter with static/dynamic apply semantics.
-- [ ] 05-03-PLAN.md — Implement OpenClaw skills and agent-rules markdown/frontmatter adapter.
+- [x] 05-02-PLAN.md — Implement NemoClaw sandbox policy YAML adapter with static/dynamic apply semantics.
+- [x] 05-03-PLAN.md — Implement OpenClaw skills and agent-rules markdown/frontmatter adapter.
 - [ ] 05-04-PLAN.md — Deliver Configuration tab store/UI with visual + raw editors and validate/save/apply actions.
 
 ### Phase 6: Create a visually impacting and selling landing page

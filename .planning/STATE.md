@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 05-01-PLAN.md
-last_updated: "2026-04-05T09:28:21.532Z"
+stopped_at: Completed 05-02-PLAN.md
+last_updated: "2026-04-05T09:38:24.904Z"
 last_activity: 2026-04-05
 progress:
   total_phases: 6
   completed_phases: 4
   total_plans: 19
-  completed_plans: 16
+  completed_plans: 18
   percent: 80
 ---
 
@@ -26,7 +26,7 @@ See: `.planning/PROJECT.md` (updated 2026-03-31)
 ## Current Position
 
 Phase: 05 (i-need-to-populate-my-configuration-tab-with-multiple-things-1-nemoclaw-sand-box-policy-with-a-visual-editor-and-the-direct-yaml-editor-2-available-skills-visual-editor-and-markdown-editor-3-exact-same-for-agent-rules-for-openclaw-llm) — EXECUTING
-Plan: 2 of 4
+Plan: 4 of 4
 Next Phase: 04 (diagnostics-security-storage-and-macos-distribution-baseline)
 Status: Ready to execute
 Last activity: 2026-04-05
@@ -63,6 +63,8 @@ Progress: [████████░░] 80%
 | Phase 04 P02 | 10m | 3 tasks | 10 files |
 | Phase 04 P04 | 7 min | 3 tasks | 8 files |
 | Phase 05 P01 | 7 min | 2 tasks | 13 files |
+| Phase 05 P03 | 7 min | 2 tasks | 2 files |
+| Phase 05 P02 | 4 min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -93,6 +95,8 @@ Recent decisions affecting current work:
 - [Phase 04]: Diagnostics IPC handlers return typed SupportErrorEnvelope responses for validation/runtime failures.
 - [Phase 05]: Use a dedicated configuration:v1 IPC namespace with schema validation in main before service dispatch.
 - [Phase 05]: Keep Phase 5 adapters as deterministic CONFIG_NOT_IMPLEMENTED stubs while locking stable service/router interfaces.
+- [Phase 05]: Expose createNemoClawPolicyAdapter(deps) for testability while preserving production singleton export.
+- [Phase 05]: Map static apply to nemoclaw onboard and dynamic apply to openshell policy set <policyPath> with command availability checks.
 
 ### Roadmap Evolution
 
@@ -109,7 +113,7 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-05T09:28:21.527Z
-Stopped at: Completed 05-01-PLAN.md
+Last session: 2026-04-05T09:38:24.899Z
+Stopped at: Completed 05-02-PLAN.md
 Resume file: None
 Resume hint: Run /gsd-plan-phase 4 to start Phase 4 planning
