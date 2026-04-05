@@ -33,6 +33,25 @@ function probeVersion(command: string): string | null {
   }
 }
 
+function probeDockerDaemonVersion(): string | null {
+  try {
+    const result = spawnSync('docker', ['info', '--format', '{{.ServerVersion}}'], {
+      encoding: 'utf8',
+      timeout: 8000,
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
+
+    if (result.status !== 0) {
+      return null;
+    }
+
+    const stdout = typeof result.stdout === 'string' ? result.stdout.trim() : '';
+    return stdout.length > 0 ? stdout : null;
+  } catch {
+    return null;
+  }
+}
+
 function deriveInstallSeverity(): HealthSeverity {
   let installState: ReturnType<typeof loadInstallState> = null;
   try {
@@ -100,7 +119,7 @@ function resolveVersions(): Record<VersionKey, string | null> {
     app: app.getVersion(),
     openclaw: probeVersion('openclaw'),
     nemoclaw: probeVersion('nemoclaw'),
-    docker: probeVersion('docker'),
+    docker: probeDockerDaemonVersion(),
   };
 }
 
@@ -108,7 +127,9 @@ export async function getHealthSnapshot(_request: GetHealthInput = {}): Promise<
   const installSeverity = deriveInstallSeverity();
   const runtimeSeverity = deriveRuntimeSeverity();
   const pluginSeverity = await derivePluginSeverity();
-  const overallSeverity = deriveOverallSeverity([installSeverity, runtimeSeverity, pluginSeverity]);
+  const versions = resolveVersions();
+  const dockerSeverity: HealthSeverity = versions.docker ? 'Healthy' : 'Warning';
+  const overallSeverity = deriveOverallSeverity([installSeverity, runtimeSeverity, pluginSeverity, dockerSeverity]);
 
   return {
     overallSeverity,
@@ -117,7 +138,7 @@ export async function getHealthSnapshot(_request: GetHealthInput = {}): Promise<
       runtime: runtimeSeverity,
       plugins: pluginSeverity,
     },
-    versions: resolveVersions(),
+    versions,
     generatedAt: new Date().toISOString(),
   };
 }

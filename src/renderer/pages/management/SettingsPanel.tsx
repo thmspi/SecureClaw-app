@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
+import type { LucideIcon } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, CircleHelp, XCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -10,6 +12,7 @@ import type {
   HealthComponentId,
   HealthSnapshot,
   HealthSeverity,
+  VersionKey,
 } from '../../../shared/diagnostics/diagnostics-contracts';
 
 const THEME_STORAGE_KEY = 'secureclaw-theme';
@@ -50,6 +53,65 @@ function toSeverityClassName(
   }
 
   return 'bg-destructive text-destructive-foreground';
+}
+
+function getSeverityIcon(severity?: HealthSeverity): LucideIcon {
+  if (!severity) {
+    return CircleHelp;
+  }
+
+  if (severity === 'Healthy') {
+    return CheckCircle2;
+  }
+
+  if (severity === 'Warning') {
+    return AlertTriangle;
+  }
+
+  return XCircle;
+}
+
+function toSeverityIconClassName(severity?: HealthSeverity, componentId?: HealthComponentId): string {
+  if (!severity) {
+    return 'text-muted-foreground';
+  }
+
+  if (severity === 'Healthy') {
+    return 'text-emerald-600 dark:text-emerald-400';
+  }
+
+  if (severity === 'Warning') {
+    if (componentId === 'runtime') {
+      return 'text-destructive';
+    }
+    return 'text-amber-500 dark:text-amber-400';
+  }
+
+  return 'text-destructive';
+}
+
+function getVersionSeverity(key: VersionKey, value: string | null): HealthSeverity {
+  if (value) {
+    return 'Healthy';
+  }
+
+  return 'Warning';
+}
+
+function getVersionWarningMessage(key: VersionKey, value: string | null): string | null {
+  if (value) {
+    return null;
+  }
+
+  if (key === 'docker') {
+    return 'Docker daemon is not running or not reachable.';
+  }
+
+  if (key === 'app') {
+    return 'App version could not be resolved.';
+  }
+
+  return `${key} is not available on this machine.`;
 }
 
 function renderComponentStatus(componentId: HealthComponentId, severity?: HealthSeverity): string {
@@ -117,17 +179,21 @@ export default function SettingsPanel() {
   const [stackUninstallError, setStackUninstallError] = useState<string | null>(null);
   const [stackUninstallResult, setStackUninstallResult] = useState<string | null>(null);
 
-  const componentEntries = useMemo(
+  const nonWorkingElements = useMemo(() => getNonWorkingElements(healthSnapshot ?? null), [healthSnapshot]);
+  const versionRows = useMemo(
     () =>
-      (Object.keys(HEALTH_COMPONENT_LABELS) as HealthComponentId[]).map((componentId) => ({
-        componentId,
-        label: HEALTH_COMPONENT_LABELS[componentId],
-        severity: healthSnapshot?.components[componentId],
-      })),
+      (['app', 'openclaw', 'nemoclaw', 'docker'] as VersionKey[]).map((key) => {
+        const value = healthSnapshot?.versions[key] ?? null;
+        const severity = getVersionSeverity(key, value);
+
+        return {
+          key,
+          value,
+          severity,
+        };
+      }),
     [healthSnapshot]
   );
-
-  const nonWorkingElements = useMemo(() => getNonWorkingElements(healthSnapshot ?? null), [healthSnapshot]);
 
   const getWarningTooltip = (severity?: HealthSeverity): string[] =>
     severity === 'Warning' ? nonWorkingElements : [];
@@ -246,68 +312,40 @@ export default function SettingsPanel() {
           </TooltipProvider>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
-          <TooltipProvider>
-            {componentEntries.map((entry) => {
-              const warningItems = getWarningTooltip(entry.severity);
-              if (warningItems.length > 0) {
-                return (
-                  <Tooltip key={entry.componentId}>
-                    <TooltipTrigger asChild>
-                      <span>
-                        <Badge
-                          variant="outline"
-                          className={cn(
-                            'capitalize border-transparent',
-                            toSeverityClassName(entry.severity, entry.componentId)
-                          )}
-                        >
-                          {entry.label}: {renderComponentStatus(entry.componentId, entry.severity)}
-                        </Badge>
-                      </span>
-                    </TooltipTrigger>
-                    <TooltipContent side="top" sideOffset={8}>
-                      <div className="space-y-1">
-                        <p className="font-semibold">Non-working elements</p>
-                        {warningItems.map((item) => (
-                          <p key={`${entry.componentId}-${item}`}>{item}</p>
-                        ))}
-                      </div>
-                    </TooltipContent>
-                  </Tooltip>
-                );
-              }
-
-              return (
-                <Badge
-                  key={entry.componentId}
-                  variant="outline"
-                  className={cn(
-                    'capitalize border-transparent',
-                    toSeverityClassName(entry.severity, entry.componentId)
-                  )}
-                >
-                  {entry.label}: {renderComponentStatus(entry.componentId, entry.severity)}
-                </Badge>
-              );
-            })}
-          </TooltipProvider>
-        </div>
-
         <div className="rounded-md border">
-          <div className="grid grid-cols-1 gap-2 p-3 text-sm sm:grid-cols-2">
-            <p className="font-medium">app</p>
-            <p className="text-muted-foreground">{healthSnapshot?.versions.app ?? 'Not available'}</p>
+          <TooltipProvider>
+            <div className="space-y-2 p-3">
+              {versionRows.map((row) => {
+                const StatusIcon = getSeverityIcon(row.severity);
+                const warningMessage = getVersionWarningMessage(row.key, row.value);
+                const icon = (
+                  <StatusIcon className={cn('size-4', toSeverityIconClassName(row.severity))} />
+                );
 
-            <p className="font-medium">openclaw</p>
-            <p className="text-muted-foreground">{healthSnapshot?.versions.openclaw ?? 'Not available'}</p>
+                return (
+                  <div key={row.key} className="flex items-center justify-between rounded-md border px-3 py-2">
+                    <p className="font-medium">{row.key}</p>
 
-            <p className="font-medium">nemoclaw</p>
-            <p className="text-muted-foreground">{healthSnapshot?.versions.nemoclaw ?? 'Not available'}</p>
-
-            <p className="font-medium">docker</p>
-            <p className="text-muted-foreground">{healthSnapshot?.versions.docker ?? 'Not available'}</p>
-          </div>
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm text-muted-foreground">{row.value ?? 'Not available'}</p>
+                      {warningMessage ? (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <span>{icon}</span>
+                          </TooltipTrigger>
+                          <TooltipContent side="top" sideOffset={8}>
+                            <p>{warningMessage}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      ) : (
+                        icon
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </TooltipProvider>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">

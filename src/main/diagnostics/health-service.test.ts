@@ -93,4 +93,31 @@ describe('health-service', () => {
     expect(snapshot.components.plugins).toBe('Healthy');
     expect(snapshot.versions.app).toBe('1.0.0');
   });
+
+  it('marks overall health warning when Docker daemon is not available', async () => {
+    mockSpawnSync.mockImplementation((command: string, args: string[] = []) => {
+      if (command === 'docker' && args[0] === 'info') {
+        return {
+          status: 1,
+          stdout: '',
+          stderr: 'Cannot connect to the Docker daemon',
+        };
+      }
+
+      return {
+        status: 0,
+        stdout: `${command} 1.0.0`,
+        stderr: '',
+      };
+    });
+
+    const { getHealthSnapshot } = await import('./health-service');
+    const snapshot = await getHealthSnapshot();
+
+    expect(snapshot.components.install).toBe('Healthy');
+    expect(snapshot.components.runtime).toBe('Healthy');
+    expect(snapshot.components.plugins).toBe('Healthy');
+    expect(snapshot.versions.docker).toBeNull();
+    expect(snapshot.overallSeverity).toBe('Warning');
+  });
 });
