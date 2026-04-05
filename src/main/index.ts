@@ -9,6 +9,7 @@ import {
   initializeRuntimeHistoryTracking,
 } from './ipc/runtime-router';
 import * as securityRouter from './ipc/security-router';
+import { registerConfigurationHandlers } from './ipc/configuration-router';
 import { installOrchestrator } from './install/install-orchestrator';
 
 const devServerUrl = process.env.VITE_DEV_SERVER_URL;
@@ -62,6 +63,7 @@ function registerIpcHandlers(mainWindow: BrowserWindow): void {
   registerRuntimeHandlers(ipcMain);
   diagnosticsRouter.registerDiagnosticsHandlers(ipcMain);
   securityRouter.registerSecurityHandlers(ipcMain);
+  registerConfigurationHandlers(ipcMain);
   registerInstallHandlers(ipcMain, mainWindow);
   initializeRuntimeHistoryTracking();
   setRuntimeMainWindow(mainWindow);

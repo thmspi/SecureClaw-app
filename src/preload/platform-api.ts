@@ -7,6 +7,7 @@ import {
   type GetHealthInput,
 } from '../shared/ipc/diagnostics-channels';
 import { SECURITY_CHANNELS } from '../shared/ipc/security-channels';
+import { CONFIGURATION_CHANNELS } from '../shared/ipc/configuration-channels';
 import type {
   RunProcessRequest,
   RunProcessResponse,
@@ -64,6 +65,18 @@ import type {
   SetSecretRequest,
   SetSecretResponse,
 } from '../shared/security/secret-contracts';
+import type {
+  ApplyDocumentRequest,
+  ApplyDocumentResponse,
+  ListDocumentsRequest,
+  ListDocumentsResponse,
+  LoadDocumentRequest,
+  LoadDocumentResponse,
+  SaveDocumentRequest,
+  SaveDocumentResponse,
+  ValidateDocumentRequest,
+  ValidateDocumentResponse,
+} from '../shared/configuration/configuration-contracts';
 
 // Narrow platform API - only approved operations
 const platformAPI = {
@@ -219,6 +232,29 @@ const secretsAPI = {
     ipcRenderer.invoke(SECURITY_CHANNELS.deleteScope, request),
 };
 
+const configurationAPI = {
+  listDocuments: (request: ListDocumentsRequest = {}): Promise<ListDocumentsResponse> =>
+    ipcRenderer.invoke(CONFIGURATION_CHANNELS.listDocuments, request),
+
+  loadDocument: (request: LoadDocumentRequest): Promise<LoadDocumentResponse> =>
+    ipcRenderer.invoke(CONFIGURATION_CHANNELS.loadDocument, request),
+
+  validateDocument: (
+    request: ValidateDocumentRequest
+  ): Promise<ValidateDocumentResponse> =>
+    ipcRenderer.invoke(CONFIGURATION_CHANNELS.validateDocument, request),
+
+  saveDocument: (
+    request: SaveDocumentRequest
+  ): Promise<SaveDocumentResponse> =>
+    ipcRenderer.invoke(CONFIGURATION_CHANNELS.saveDocument, request),
+
+  applyDocument: (
+    request: ApplyDocumentRequest
+  ): Promise<ApplyDocumentResponse> =>
+    ipcRenderer.invoke(CONFIGURATION_CHANNELS.applyDocument, request),
+};
+
 // Expose to renderer via contextBridge - NO raw ipcRenderer
 contextBridge.exposeInMainWorld('secureClaw', {
   platform: platformAPI,
@@ -226,6 +262,7 @@ contextBridge.exposeInMainWorld('secureClaw', {
   runtime: runtimeAPI,
   diagnostics: diagnosticsAPI,
   secrets: secretsAPI,
+  configuration: configurationAPI,
 });
 
 // Type declaration for renderer usage
@@ -237,6 +274,7 @@ declare global {
       runtime: typeof runtimeAPI;
       diagnostics: typeof diagnosticsAPI;
       secrets: typeof secretsAPI;
+      configuration: typeof configurationAPI;
     };
   }
 }
