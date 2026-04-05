@@ -89,6 +89,24 @@ describe('Preload Platform API', () => {
     expect(typeof secretsAPI.deleteScopeSecrets).toBe('function');
   });
 
+  it('should expose configuration API methods', async () => {
+    await import('../platform-api');
+
+    const calls = mockContextBridge.exposeInMainWorld.mock.calls;
+    const configurationAPI = calls[0]?.[1]?.configuration;
+
+    expect(configurationAPI).toHaveProperty('listDocuments');
+    expect(typeof configurationAPI.listDocuments).toBe('function');
+    expect(configurationAPI).toHaveProperty('loadDocument');
+    expect(typeof configurationAPI.loadDocument).toBe('function');
+    expect(configurationAPI).toHaveProperty('validateDocument');
+    expect(typeof configurationAPI.validateDocument).toBe('function');
+    expect(configurationAPI).toHaveProperty('saveDocument');
+    expect(typeof configurationAPI.saveDocument).toBe('function');
+    expect(configurationAPI).toHaveProperty('applyDocument');
+    expect(typeof configurationAPI.applyDocument).toBe('function');
+  });
+
   it('should NOT expose raw ipcRenderer', async () => {
     await import('../platform-api');
     
@@ -99,5 +117,6 @@ describe('Preload Platform API', () => {
     expect(exposedAPI?.platform).not.toHaveProperty('ipcRenderer');
     expect(exposedAPI?.diagnostics).not.toHaveProperty('ipcRenderer');
     expect(exposedAPI?.secrets).not.toHaveProperty('ipcRenderer');
+    expect(exposedAPI?.configuration).not.toHaveProperty('ipcRenderer');
   });
 });
