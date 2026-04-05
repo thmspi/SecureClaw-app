@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   LayoutDashboard,
   PanelLeft,
@@ -8,7 +8,9 @@ import {
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
+import { useConfigurationStore } from '@/stores/configuration-store';
 import { useManagementStore } from '@/stores/management-store';
+import ConfigurationPanel from './ConfigurationPanel';
 import PluginCatalog from './PluginCatalog';
 import SessionControl from './SessionControl';
 import SettingsPanel from './SettingsPanel';
@@ -27,9 +29,11 @@ const NAV_ITEMS: Array<{
 
 export default function ManagementPage() {
   const { loadSessions, loadPluginPackages } = useManagementStore();
+  const loadConfigurationDocuments = useConfigurationStore((state) => state.loadDocuments);
 
   const [menuOpen, setMenuOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<ManagementTab>('management');
+  const configurationLoadedRef = useRef(false);
   const activeTabLabel = NAV_ITEMS.find((item) => item.id === activeTab)?.label ?? 'Management';
 
   useEffect(() => {
@@ -47,18 +51,17 @@ export default function ManagementPage() {
     };
   }, []);
 
+  useEffect(() => {
+    if (activeTab !== 'configuration' || configurationLoadedRef.current) {
+      return;
+    }
+    configurationLoadedRef.current = true;
+    void loadConfigurationDocuments();
+  }, [activeTab, loadConfigurationDocuments]);
+
   const renderContent = () => {
     if (activeTab === 'configuration') {
-      return (
-        <Card>
-          <CardHeader>
-            <CardTitle>Configuration</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground">No additional configuration is available yet.</p>
-          </CardContent>
-        </Card>
-      );
+      return <ConfigurationPanel />;
     }
 
     if (activeTab === 'settings') {
