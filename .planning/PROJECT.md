@@ -2,7 +2,7 @@
 
 ## What This Is
 
-SecureClaw is an Electron desktop app that simplifies installation and day-to-day management of OpenClaw and NemoClaw for enterprise users with low technical experience. The immediate target is a full macOS v1, while designing process execution, paths, and packaging layers so Windows support can be added with low rework. The product should make policy, skills, rules, agents, and MCP management simple and clear.
+SecureClaw is an Electron desktop app that simplifies installation and day-to-day management of OpenClaw and NemoClaw for enterprise users with low technical experience. OpenClaw is the assistant runtime users operate; NemoClaw is the NVIDIA secure execution stack that runs OpenClaw in a hardened sandbox model. The immediate target is a full macOS v1, while designing process execution, paths, and packaging layers so Windows support can be added with low rework. The product should make policy, skills, rules, agents, and MCP management simple and clear.
 
 ## Core Value
 

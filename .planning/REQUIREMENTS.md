@@ -24,22 +24,29 @@ Requirements for initial macOS release with Windows compatibility built into arc
 
 ### Session and Runtime
 
-- [ ] **RUN-01**: User can start a managed session from the app.
-- [ ] **RUN-02**: User can stop an active managed session from the app.
-- [ ] **RUN-03**: Plugin execution can be triggered and monitored from the app.
-- [ ] **RUN-04**: Runtime operations are persisted in a local operation history for troubleshooting.
+- [x] **RUN-01**: User can start a managed session from the app.
+- [x] **RUN-02**: User can stop an active managed session from the app.
+- [x] **RUN-03**: Plugin execution can be triggered and monitored from the app.
+- [x] **RUN-04**: Runtime operations are persisted in a local operation history for troubleshooting.
 
 ### User Clarity and Diagnostics
 
-- [ ] **DIAG-01**: Errors are shown in plain language with clear next-step actions.
-- [ ] **DIAG-02**: App provides a health dashboard with install/runtime status and component versions.
-- [ ] **DIAG-03**: User can export a redacted diagnostics bundle for IT/support.
+- [x] **DIAG-01**: Errors are shown in plain language with clear next-step actions.
+- [x] **DIAG-02**: App provides a health dashboard with install/runtime status and component versions.
+- [x] **DIAG-03**: User can export a redacted diagnostics bundle for IT/support.
 
 ### Security and Reliability
 
-- [ ] **SEC-01**: Sensitive local credentials/secrets are stored using OS-backed secure storage abstractions.
+- [x] **SEC-01**: Sensitive local credentials/secrets are stored using OS-backed secure storage abstractions.
 - [ ] **SEC-02**: Renderer process has no direct privileged system access; all privileged actions are mediated via typed IPC.
-- [ ] **SEC-03**: macOS packaged app supports signed distribution for enterprise-safe deployment baseline.
+- [x] **SEC-03**: macOS packaged app supports signed distribution for enterprise-safe deployment baseline.
+
+### Configuration Authoring
+
+- [x] **CFG-01**: Configuration tab exposes editable surfaces for NemoClaw sandbox policy, OpenClaw skills, and OpenClaw agent rules.
+- [x] **CFG-02**: Each configuration surface supports both a visual editor and a raw text editor mode.
+- [x] **CFG-03**: Configuration reads/writes/validation/apply flows execute through typed IPC contracts with parser-based validation.
+- [x] **CFG-04**: Configuration UI surfaces explicit unavailable-state guidance when required CLIs or workspace paths are missing.
 
 ## v2 Requirements
 
@@ -82,20 +89,24 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SETUP-03 | Phase 2 | Pending |
 | SETUP-04 | Phase 2 | Pending |
 | SETUP-05 | Phase 2 | Pending |
-| RUN-01 | Phase 3 | Pending |
-| RUN-02 | Phase 3 | Pending |
-| RUN-03 | Phase 3 | Pending |
-| RUN-04 | Phase 3 | Pending |
-| DIAG-01 | Phase 4 | Pending |
-| DIAG-02 | Phase 4 | Pending |
-| DIAG-03 | Phase 4 | Pending |
-| SEC-01 | Phase 4 | Pending |
+| RUN-01 | Phase 3 | Complete |
+| RUN-02 | Phase 3 | Complete |
+| RUN-03 | Phase 3 | Complete |
+| RUN-04 | Phase 3 | Complete |
+| DIAG-01 | Phase 4 | Complete |
+| DIAG-02 | Phase 4 | Complete |
+| DIAG-03 | Phase 4 | Complete |
+| SEC-01 | Phase 4 | Complete |
 | SEC-02 | Phase 1 | Pending |
-| SEC-03 | Phase 4 | Pending |
+| SEC-03 | Phase 4 | Complete |
+| CFG-01 | Phase 5 | Complete |
+| CFG-02 | Phase 5 | Complete |
+| CFG-03 | Phase 5 | Complete |
+| CFG-04 | Phase 5 | Complete |
 
 **Coverage:**
-- v1 requirements: 19 total
-- Mapped to phases: 19
+- v1 requirements: 23 total
+- Mapped to phases: 23
 - Unmapped: 0
 
 ---
