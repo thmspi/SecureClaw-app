@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import ManagementPage from '@/pages/management/ManagementPage';
 import { WizardPage } from '@/pages/wizard/WizardPage';
+import { clearPersistedZustandStorage } from '@/lib/zustand-storage';
 import { useWizardStore } from '@/stores/wizard-store';
 
 interface RouteProps {
@@ -24,6 +25,24 @@ export default function App() {
   const [currentPath, setCurrentPath] = useState(() => normalizePath(window.location.pathname));
   const installStatus = useWizardStore((state) => state.install.status);
   const currentStep = useWizardStore((state) => state.currentStep);
+  const resetWizard = useWizardStore((state) => state.reset);
+
+  // Dev helper: Press Cmd+Shift+R to reset install wizard
+  useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      if (e.metaKey && e.shiftKey && e.key === 'R') {
+        e.preventDefault();
+        console.log('[DEV] Resetting install wizard...');
+        resetWizard();
+        clearPersistedZustandStorage(localStorage);
+        window.history.pushState({}, '', '/');
+        window.location.reload();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, [resetWizard]);
 
   useEffect(() => {
     const onPathChange = () => {

@@ -3,16 +3,25 @@ import { app } from 'electron';
 import { join } from 'path';
 import type { InstallState, InstallTarget, InstallStatus } from '../../shared/install';
 
-const DB_PATH = join(app.getPath('userData'), 'secureclaw.db');
-
 let db: Database.Database | null = null;
+let dbPath: string | null = null;
+
+/**
+ * Get database path (lazy initialization after app is ready)
+ */
+function getDbPath(): string {
+  if (!dbPath) {
+    dbPath = join(app.getPath('userData'), 'secureclaw.db');
+  }
+  return dbPath;
+}
 
 /**
  * Get or create the database connection with WAL journal mode (D-16)
  */
 function getDb(): Database.Database {
   if (!db) {
-    db = new Database(DB_PATH);
+    db = new Database(getDbPath());
     db.pragma('journal_mode = WAL');
     db.exec(`
       CREATE TABLE IF NOT EXISTS install_state (

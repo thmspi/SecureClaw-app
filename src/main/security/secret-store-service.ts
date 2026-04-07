@@ -15,7 +15,18 @@ import type {
   SetSecretResponse,
 } from '../../shared/security/secret-contracts';
 
-const DB_PATH = join(app.getPath('userData'), 'secureclaw.db');
+let dbPath: string | null = null;
+
+/**
+ * Get database path (lazy initialization after app is ready)
+ */
+function getDbPath(): string {
+  if (!dbPath) {
+    dbPath = join(app.getPath('userData'), 'secureclaw.db');
+  }
+  return dbPath;
+}
+
 const UNAVAILABLE_ERROR_CODE = 'SECURE_STORAGE_UNAVAILABLE';
 const UNKNOWN_ERROR_CODE = 'SECRET_STORE_OPERATION_FAILED';
 
@@ -23,7 +34,7 @@ let db: Database.Database | null = null;
 
 function getDb(): Database.Database {
   if (!db) {
-    db = new Database(DB_PATH);
+    db = new Database(getDbPath());
     db.pragma('journal_mode = WAL');
     db.exec(`
       CREATE TABLE IF NOT EXISTS secret_store (

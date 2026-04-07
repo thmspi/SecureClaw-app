@@ -295,4 +295,5 @@ AWS_Icon-package
 #VS code settings
 .vscode
 .codex
+.agents
 copilot-instructions.md

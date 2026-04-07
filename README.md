@@ -1,84 +1,115 @@
 # SecureClaw App
 
-Desktop installer and lifecycle manager for OpenClaw and NVIDIA NemoClaw, built with Electron, TypeScript, and React.
 
-## Project Structure
 
+> **Note** : This is 1 week POC to demonstrate the capability of building an installer app. This could not be pursued as I don't have an Apple Silicon Mac
+
+SecureClaw is a desktop installer and operations panel for **OpenClaw** and **NVIDIA NemoClaw**.
+It guides setup, centralizes runtime/plugin operations, and provides configuration + health diagnostics in one app.
+
+## What The Project Includes
+
+* Guided onboarding wizard for stack installation
+* Management panel for runtime sessions and plugin lifecycle
+* Configuration panel for NemoClaw policy, available skills, and agent rules
+* Settings health check with diagnostics export and stack uninstall tools
+
+## Product Walkthrough
+
+### 1) Install Wizard - Step 1 (Welcome)
+
+![1.00](README-imgs/install-1.png)
+
+The first screen introduces the SecureClaw setup flow and what will be installed:
+OpenClaw runtime + NemoClaw secure sandbox stack.
+
+### 2) Install Wizard - Step 2 (Prerequisites)
+
+![1.00](README-imgs/install-2.png)
+
+This step verifies host readiness (for example Node.js, Python, Docker daemon, and platform requirements)
+before allowing installation to continue.
+
+### 3) Global UI
+
+![1.00](README-imgs/global-panel.png)
+
+After install, the app switches to a global panel layout with a left navigation and tabbed workspace:
+**Management**, **Configuration**, and **Settings**.
+
+### 4) Management Panel
+
+![1.00](README-imgs/management-panel.png)
+
+The Management view is used for day-to-day runtime control:
+
+* Start/stop OpenClaw runtime sessions
+* View active session state
+* Browse, enable/disable, import, validate, and remove plugin packages
+
+### 5) Configuration Panel
+
+![1.00](README-imgs/config-panel.png)
+
+The Configuration view lets you maintain key stack documents in **Visual** and **Text** modes:
+
+* NemoClaw Policy (YAML editor + apply action)
+* Available Skills (Markdown-based files)
+* Agent Rules (Markdown-based files)
+* Built-in validation and save/apply workflow
+
+### 6) Settings - Health Check
+
+![1.00](README-imgs/health-check.png)
+
+The Settings health section provides:
+
+* Overall health severity (install/runtime/plugins)
+* Version visibility (app, OpenClaw, NemoClaw, Docker)
+* Manual refresh
+* Diagnostics bundle export (`.zip`) for support
+* OpenClaw + NemoClaw stack uninstall action
+
+## Quick Start (Development)
+
+1. Install dependencies:
+
+```Shell
+npm install
 ```
-SecureClaw-app/
-├── src/
-│   ├── main/           # Electron main process
-│   ├── preload/        # Preload scripts
-│   ├── renderer/       # React renderer process
-│   └── shared/         # Shared code
-│       ├── platform/   # Platform-specific utilities
-│       └── ipc/        # IPC type definitions
-├── dist/               # Build output
-└── node_modules/       # Dependencies
+
+1. Start renderer:
+
+```Shell
+npm run dev:renderer
 ```
 
-## Available Scripts
+1. In a second terminal, launch desktop app:
 
-- `npm run dev` - Start renderer development server (Vite)
-- `npm run dev:renderer` - Same as `dev`
-- `npm run dev:desktop` - Build main/preload and launch Electron against local Vite URL (`http://localhost:3000`)
-- `npm run dev:desktop:sim-install` - Launch desktop with `SECURECLAW_DEV_SIMULATE_INSTALL=1` to simulate all install steps (no real OpenClaw/NemoClaw install)
-- `npm run start` - Build main + renderer and launch Electron using built assets
-- `npm run build` - Build main + preload + shared + renderer
-- `npm run build:main` - Build main/preload/shared only
-- `npm run build:renderer` - Build renderer only
-- `npm test` - Run Jest tests
-- `npm run test:watch` - Run Jest in watch mode
-- `npm run type-check` - Run TypeScript type checking
+```Shell
+npm run dev:desktop
+```
+
+Optional simulation mode (skip real install side effects in development):
+
+```Shell
+npm run dev:desktop:sim-install
+```
+
+## Useful Commands
+
+* `npm run start` - Build + launch Electron app
+* `npm run build` - Build main and renderer
+* `npm run test` - Run Jest tests
+* `npm run type-check` - Run TypeScript checks
 
 ## Tech Stack
 
-- **Electron** - Desktop application framework
-- **TypeScript** - Type-safe JavaScript (strict mode, targeting ES2020)
-- **React** - UI framework
-- **Vite** - Build tool and dev server
-- **Jest** - Testing framework with ts-jest
-- **Zod** - Schema validation
-- **Execa** - Process execution
+* Electron
+* React 19
+* TypeScript
+* Vite
+* Zustand
+* Monaco Editor + RJSF (config editing)
+* Jest
 
-## TypeScript Configuration
-
-The project uses three TypeScript configurations:
-
-1. `tsconfig.json` - Base configuration with strict settings
-2. `tsconfig.main.json` - Main process configuration
-3. `tsconfig.renderer.json` - Renderer process configuration
-
-## Testing
-
-Tests are configured with Jest and ts-jest. Coverage thresholds are set at 80% for branches, functions, lines, and statements.
-
-Run tests with:
-```bash
-npm test
-```
-
-## Development Workflow
-
-This project is set up for Test-Driven Development (TDD):
-
-1. Write tests first
-2. Run `npm run test:watch` for continuous feedback
-3. Implement features to make tests pass
-4. Run `npm run type-check` to verify TypeScript compliance
-
-## Getting Started
-
-For full desktop app UAT:
-
-1. Terminal A: `npm run dev:renderer`
-2. Terminal B: `npm run dev:desktop`
-
-For built app run:
-
-1. `npm run start`
-
-For development on unsupported hardware (simulate install flow only):
-
-1. Terminal A: `npm run dev:renderer`
-2. Terminal B: `npm run dev:desktop:sim-install`

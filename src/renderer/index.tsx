@@ -4,6 +4,7 @@ import '@fontsource-variable/geist';
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App';
+import { clearPersistedZustandStorageFromEnv } from '@/lib/zustand-storage';
 
 const THEME_STORAGE_KEY = 'secureclaw-theme';
 
@@ -19,6 +20,7 @@ function applyInitialTheme(): void {
 }
 
 applyInitialTheme();
+clearPersistedZustandStorageFromEnv();
 
 const container = document.getElementById('root');
 if (container) {
